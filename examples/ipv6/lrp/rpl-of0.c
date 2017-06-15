@@ -81,13 +81,9 @@ calculate_rank(rpl_parent_t *p, rpl_rank_t base_rank)
     base_rank = p->rank;
   }
 
-  /*increment = p != NULL ?
+  increment = p != NULL ?
                 p->dag->instance->min_hoprankinc :
                 DEFAULT_RANK_INCREMENT;
-*/
-  increment = p != NULL ?
-                  p->dag->instance->max_rankinc :
-                  DEFAULT_RANK_INCREMENT;
 
   if((rpl_rank_t)(base_rank + increment) < base_rank) {
     PRINTF("RPL: OF0 rank %d incremented to infinite rank due to wrapping\n",

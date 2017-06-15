@@ -74,10 +74,6 @@ static rpl_of_t * const objective_functions[] = {&RPL_OF};
 /* Per-parent RPL information */
 NBR_TABLE(rpl_parent_t, rpl_parents);
 /*---------------------------------------------------------------------------*/
-/* Maintain a list of all parents. */
-LIST_STRUCT(all_parents);
-
-/*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
 rpl_instance_t *default_instance;
@@ -702,7 +698,6 @@ rpl_select_parent(rpl_dag_t *dag)
 
   p = nbr_table_head(rpl_parents);
   while(p != NULL) {
-	  list_add(all_parents, p);
     if(p->rank == INFINITE_RANK) {
       /* ignore this neighbor */
     } else if(best == NULL) {
