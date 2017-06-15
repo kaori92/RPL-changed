@@ -96,7 +96,7 @@ rpl_purge_routes(void)
       /* Propagate this information with a No-Path DAO to preferred parent if we are not a RPL Root */
       if(dag->rank != ROOT_RANK(default_instance)) {
         PRINTF(" -> generate No-Path DAO\n");
-        dao_output_target(dag->preferred_parents, &prefix, RPL_ZERO_LIFETIME);
+        dao_output_target(dag->preferred_parent, &prefix, RPL_ZERO_LIFETIME);
         /* Don't schedule more than 1 No-Path DAO, let next iteration handle that */
         return;
       }

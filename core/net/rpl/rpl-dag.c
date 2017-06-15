@@ -53,7 +53,7 @@
 #include <limits.h>
 #include <string.h>
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #if UIP_CONF_IPV6
@@ -141,6 +141,29 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     nbr_table_lock(rpl_parents, p);
     dag->preferred_parent = p;
   }
+}
+
+/*---------------------------------------------------------------------------*/
+static void
+rpl_set_another_preferred_parent(rpl_dag_t *dag)
+{
+	//TODO
+	// find the best parent from all_parents
+	rpl_parent_t *current, rpl_parent_t *p1, rpl_parent_t *p2;
+	rpl_parent_t *best;
+
+	current = nbr_table_head(all_parents);
+	  while(current != NULL) {
+		  if(best == NULL){
+			  best = current;
+		  }
+		  else {
+			  best = best_parent_of0(current, best);
+		  }
+	    p = nbr_table_next(rpl_parents, p);
+	  }
+
+	dag->preferred_parent = best;
 }
 /*---------------------------------------------------------------------------*/
 /* Greater-than function for the lollipop counter.                      */
@@ -612,6 +635,12 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   old_rank = instance->current_dag->rank;
   last_parent = instance->current_dag->preferred_parent;
 
+  if(last_parent == NULL){
+	  // preferred parent failed, setting to another most preferred parent
+	  // getting the parent from all_parents with the rank
+	  // TODO:
+  }
+
   best_dag = instance->current_dag;
   if(best_dag->rank != ROOT_RANK(instance)) {
     if(rpl_select_parent(p->dag) != NULL) {
@@ -699,10 +728,13 @@ rpl_select_parent(rpl_dag_t *dag)
   rpl_parent_t *p, *best;
 
   best = NULL;
-
+  PRINTF("RPL: Entering rpl_select_parent, adding all parents for this node: ");
+  PRINTF("\n");
   p = nbr_table_head(rpl_parents);
   while(p != NULL) {
 	  list_add(all_parents, p);
+	  PRINTF("RPL: Adding a parent to a list of all parents: %d", p->rank);
+	  PRINTF("\n");
     if(p->rank == INFINITE_RANK) {
       /* ignore this neighbor */
     } else if(best == NULL) {
@@ -718,6 +750,41 @@ rpl_select_parent(rpl_dag_t *dag)
   }
 
   return best;
+}
+/*---------------------------------------------------------------------------*/
+
+static rpl_parent_t *
+best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
+{
+  rpl_rank_t r1, r2;
+  rpl_dag_t *dag;
+
+  PRINTF("RPL: Comparing parent ");
+  PRINT6ADDR(rpl_get_parent_ipaddr(p1));
+  PRINTF(" (confidence %d, rank %d) with parent ",
+        p1->link_metric, p1->rank);
+  PRINT6ADDR(rpl_get_parent_ipaddr(p2));
+  PRINTF(" (confidence %d, rank %d)\n",
+        p2->link_metric, p2->rank);
+
+
+  r1 = DAG_RANK(p1->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC  +
+         p1->link_metric;
+  r2 = DAG_RANK(p2->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC  +
+         p2->link_metric;
+  /* Compare two parents by looking both and their rank and at the ETX
+     for that parent. We choose the parent that has the most
+     favourable combination. */
+
+  dag = (rpl_dag_t *)p1->dag; /* Both parents must be in the same DAG. */
+  if(r1 < r2 + MIN_DIFFERENCE &&
+     r1 > r2 - MIN_DIFFERENCE) {
+    return dag->preferred_parent;
+  } else if(r1 < r2) {
+    return p1;
+  } else {
+    return p2;
+  }
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -898,6 +965,14 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
   memcpy(&dag->prefix_info, &dio->prefix_info, sizeof(rpl_prefix_t));
 
   rpl_set_preferred_parent(dag, p);
+
+  if(dag->preferred_parent == NULL){
+	  // setting another preferred parent
+	  rpl_set_another_preferred_parent(dag);
+  }
+  //TODO
+  //
+
   instance->of->update_metric_container(instance);
   dag->rank = instance->of->calculate_rank(p, 0);
   /* So far this is the lowest rank we are aware of. */
