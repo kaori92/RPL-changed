@@ -315,4 +315,7 @@ void rpl_reset_periodic_timer(void);
 /* Route poisoning. */
 void rpl_poison_routes(rpl_dag_t *, rpl_parent_t *);
 
+// added in modification of RPL
+static rpl_parent_t *best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2);
+
 #endif /* RPL_PRIVATE_H */

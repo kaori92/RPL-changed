@@ -76,7 +76,7 @@ NBR_TABLE(rpl_parent_t, rpl_parents);
 /*---------------------------------------------------------------------------*/
 /* Maintain a list of all parents. */
 LIST_STRUCT(all_parents);
-
+//NBR_TABLE(rpl_parent_t, all_parents);
 /*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
@@ -86,6 +86,7 @@ void
 rpl_dag_init(void)
 {
   nbr_table_register(rpl_parents, (nbr_table_callback *)rpl_remove_parent);
+  list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
 rpl_rank_t
@@ -149,10 +150,10 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
 	//TODO
 	// find the best parent from all_parents
-	rpl_parent_t *current, rpl_parent_t *p1, rpl_parent_t *p2;
+	rpl_parent_t *current;
 	rpl_parent_t *best;
 
-	current = nbr_table_head(all_parents);
+	current = list_head(all_parents);
 	  while(current != NULL) {
 		  if(best == NULL){
 			  best = current;
@@ -160,7 +161,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 		  else {
 			  best = best_parent_of0(current, best);
 		  }
-	    p = nbr_table_next(rpl_parents, p);
+		  current = list_item_next(current);
 	  }
 
 	dag->preferred_parent = best;
@@ -637,8 +638,9 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
 
   if(last_parent == NULL){
 	  // preferred parent failed, setting to another most preferred parent
-	  // getting the parent from all_parents with the rank
+	  // getting the next most preferred parent from all_parents
 	  // TODO:
+	  rpl_set_another_preferred_parent(instance->current_dag);
   }
 
   best_dag = instance->current_dag;
@@ -966,12 +968,11 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
 
   rpl_set_preferred_parent(dag, p);
 
+  //TODO
   if(dag->preferred_parent == NULL){
 	  // setting another preferred parent
 	  rpl_set_another_preferred_parent(dag);
   }
-  //TODO
-  //
 
   instance->of->update_metric_container(instance);
   dag->rank = instance->of->calculate_rank(p, 0);
@@ -1065,6 +1066,12 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
   memcpy(&dag->prefix_info, &dio->prefix_info, sizeof(rpl_prefix_t));
 
   rpl_set_preferred_parent(dag, p);
+
+  //TODO
+  if(dag->preferred_parent == NULL){
+	  rpl_set_another_preferred_parent(dag);
+  }
+
   dag->rank = instance->of->calculate_rank(p, 0);
   dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */
 
