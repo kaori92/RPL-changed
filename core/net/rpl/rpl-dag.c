@@ -40,7 +40,7 @@
  * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
  */
 
-
+#include "net/rpl/rpl-mrhof.h"
 #include "contiki.h"
 #include "net/rpl/rpl-private.h"
 #include "net/uip.h"
@@ -53,7 +53,7 @@
 #include <limits.h>
 #include <string.h>
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
 #if UIP_CONF_IPV6
@@ -145,7 +145,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 }
 
 /*---------------------------------------------------------------------------*/
-static void
+static rpl_parent_t
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
 	//TODO
@@ -159,12 +159,15 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 			  best = current;
 		  }
 		  else {
-			  best = best_parent_of0(current, best);
+			  //best = best_parent_of0(current, best);
+			  best = best_parent_mrhof(current, best);
+
 		  }
 		  current = list_item_next(current);
 	  }
 
 	dag->preferred_parent = best;
+	return best;
 }
 /*---------------------------------------------------------------------------*/
 /* Greater-than function for the lollipop counter.                      */
@@ -636,10 +639,11 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   old_rank = instance->current_dag->rank;
   last_parent = instance->current_dag->preferred_parent;
 
+  // TODO:
   if(last_parent == NULL){
 	  // preferred parent failed, setting to another most preferred parent
 	  // getting the next most preferred parent from all_parents
-	  // TODO:
+
 	  rpl_set_another_preferred_parent(instance->current_dag);
   }
 
@@ -750,14 +754,65 @@ rpl_select_parent(rpl_dag_t *dag)
   if(best != NULL) {
     rpl_set_preferred_parent(dag, best);
   }
-
+  if(dag->preferred_parent == NULL){
+  	  best = rpl_set_another_preferred_parent(dag);
+  }
   return best;
 }
 /*---------------------------------------------------------------------------*/
+static rpl_path_metric_t
+calculate_path_metric(rpl_parent_t *p)
+{
+  if(p == NULL) {
+    return MAX_PATH_COST * RPL_DAG_MC_ETX_DIVISOR;
+  }
 
+#if RPL_DAG_MC == RPL_DAG_MC_NONE
+  return p->rank + (uint16_t)p->link_metric;
+#elif RPL_DAG_MC == RPL_DAG_MC_ETX
+  return p->mc.obj.etx + (uint16_t)p->link_metric;
+#elif RPL_DAG_MC == RPL_DAG_MC_ENERGY
+  return p->mc.obj.energy.energy_est + (uint16_t)p->link_metric;
+#else
+#error "Unsupported RPL_DAG_MC configured. See rpl.h."
+#endif /* RPL_DAG_MC */
+}
+/*---------------------------------------------------------------------------*/
+static rpl_parent_t *
+best_parent_mrhof(rpl_parent_t *p1, rpl_parent_t *p2)
+{
+  rpl_dag_t *dag;
+  rpl_path_metric_t min_diff;
+  rpl_path_metric_t p1_metric;
+  rpl_path_metric_t p2_metric;
+
+  dag = p1->dag; /* Both parents are in the same DAG. */
+
+  min_diff = RPL_DAG_MC_ETX_DIVISOR /
+             PARENT_SWITCH_THRESHOLD_DIV;
+
+  p1_metric = calculate_path_metric(p1);
+  p2_metric = calculate_path_metric(p2);
+
+  /* Maintain stability of the preferred parent in case of similar ranks. */
+  if(p1 == dag->preferred_parent || p2 == dag->preferred_parent) {
+    if(p1_metric < p2_metric + min_diff &&
+       p1_metric > p2_metric - min_diff) {
+      PRINTF("RPL: MRHOF hysteresis: %u <= %u <= %u\n",
+             p2_metric - min_diff,
+             p1_metric,
+             p2_metric + min_diff);
+      return dag->preferred_parent;
+    }
+  }
+
+  return p1_metric < p2_metric ? p1 : p2;
+}
+/*---------------------------------------------------------------------------*/
 static rpl_parent_t *
 best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
 {
+  int MIN_DIFFERENCE = (RPL_MIN_HOPRANKINC + RPL_MIN_HOPRANKINC / 2);
   rpl_rank_t r1, r2;
   rpl_dag_t *dag;
 
@@ -1065,9 +1120,8 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
   /* copy prefix information into the dag */
   memcpy(&dag->prefix_info, &dio->prefix_info, sizeof(rpl_prefix_t));
 
-  rpl_set_preferred_parent(dag, p);
-
   //TODO
+  rpl_set_preferred_parent(dag, p);
   if(dag->preferred_parent == NULL){
 	  rpl_set_another_preferred_parent(dag);
   }

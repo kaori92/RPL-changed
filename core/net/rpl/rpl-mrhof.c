@@ -43,7 +43,7 @@
  *
  * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
  */
-
+#include "net/rpl/rpl-mrhof.h"
 #include "net/rpl/rpl-private.h"
 #include "net/nbr-table.h"
 
