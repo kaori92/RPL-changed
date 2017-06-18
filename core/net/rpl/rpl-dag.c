@@ -76,7 +76,6 @@ NBR_TABLE(rpl_parent_t, rpl_parents);
 /*---------------------------------------------------------------------------*/
 /* Maintain a list of all parents. */
 LIST_STRUCT(all_parents);
-//NBR_TABLE(rpl_parent_t, all_parents);
 /*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
@@ -159,8 +158,8 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 			  best = current;
 		  }
 		  else {
-			  //best = best_parent_of0(current, best);
-			  best = best_parent_mrhof(current, best);
+			  best = best_parent_of0(current, best);
+			  //best = best_parent_mrhof(current, best);
 
 		  }
 		  current = list_item_next(current);
@@ -640,12 +639,12 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   last_parent = instance->current_dag->preferred_parent;
 
   // TODO:
-  if(last_parent == NULL){
+  /*if(last_parent == NULL){
 	  // preferred parent failed, setting to another most preferred parent
 	  // getting the next most preferred parent from all_parents
 
 	  rpl_set_another_preferred_parent(instance->current_dag);
-  }
+  }*/
 
   best_dag = instance->current_dag;
   if(best_dag->rank != ROOT_RANK(instance)) {
@@ -754,9 +753,10 @@ rpl_select_parent(rpl_dag_t *dag)
   if(best != NULL) {
     rpl_set_preferred_parent(dag, best);
   }
-  if(dag->preferred_parent == NULL){
+  //TODO:
+  /*if(dag->preferred_parent == NULL){
   	  best = rpl_set_another_preferred_parent(dag);
-  }
+  }*/
   return best;
 }
 /*---------------------------------------------------------------------------*/
@@ -1024,10 +1024,10 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
   rpl_set_preferred_parent(dag, p);
 
   //TODO
-  if(dag->preferred_parent == NULL){
+  /*if(dag->preferred_parent == NULL){
 	  // setting another preferred parent
 	  rpl_set_another_preferred_parent(dag);
-  }
+  }*/
 
   instance->of->update_metric_container(instance);
   dag->rank = instance->of->calculate_rank(p, 0);
@@ -1122,9 +1122,9 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 
   //TODO
   rpl_set_preferred_parent(dag, p);
-  if(dag->preferred_parent == NULL){
+  /*if(dag->preferred_parent == NULL){
 	  rpl_set_another_preferred_parent(dag);
-  }
+  }*/
 
   dag->rank = instance->of->calculate_rank(p, 0);
   dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */
@@ -1209,7 +1209,7 @@ rpl_recalculate_ranks(void)
       if(!rpl_process_parent_event(p->dag->instance, p)) {
         PRINTF("RPL: A parent was dropped\n");
         // TODO2
-        rpl_set_another_preferred_parent(p->dag);
+        //rpl_set_another_preferred_parent(p->dag);
       }
     }
     p = nbr_table_next(rpl_parents, p);
