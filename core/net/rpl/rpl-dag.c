@@ -145,7 +145,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 }
 
 /*---------------------------------------------------------------------------*/
-static rpl_parent_t
+static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
 	//TODO
@@ -1208,6 +1208,8 @@ rpl_recalculate_ranks(void)
       PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
       if(!rpl_process_parent_event(p->dag->instance, p)) {
         PRINTF("RPL: A parent was dropped\n");
+        // TODO2
+        rpl_set_another_preferred_parent(p->dag);
       }
     }
     p = nbr_table_next(rpl_parents, p);
