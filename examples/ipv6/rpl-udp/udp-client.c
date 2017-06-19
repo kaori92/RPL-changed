@@ -59,7 +59,7 @@
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
-
+int packets_received;
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
 AUTOSTART_PROCESSES(&udp_client_process);
@@ -73,6 +73,7 @@ tcpip_handler(void)
     str = uip_appdata;
     str[uip_datalen()] = '\0';
     printf("DATA recv '%s'\n", str);
+    packets_received++;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -179,12 +180,28 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #endif
 
   etimer_set(&periodic, SEND_INTERVAL);
+  /*char* packets_str;
+  char* name_with_extension;
+  const char* text_for_printing = "TEST: number of packets received by client: ";*/
+  //char text[] = "TEST: number of packets received by client: ";
+  //packets_received = 0;
+  /*printf(packets_str, "%d", packets_received); // Now packets_str contains the integer as characters
+  name_with_extension = malloc(strlen(text_for_printing)+1+4); // make space for the new string (should check the return value ...)
+  strcpy(name_with_extension, text_for_printing); // copy name into the new var
+  strcat(name_with_extension, packets_str); // add the extension
+  puts(name_with_extension);
+  printf("hello");*/
   while(1) {
+	  //printf("TEST: number of packets received by client: %d", packets_received);
+
+
     PROCESS_YIELD();
+
     if(ev == tcpip_event) {
       tcpip_handler();
     }
-    
+    //text[44] = packets_received + '0';
+    //puts(text);
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
       ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
@@ -200,7 +217,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
     }
   }
-
+  //free(name_with_extension);
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/

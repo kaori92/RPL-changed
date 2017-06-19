@@ -51,6 +51,7 @@
 #define UDP_EXAMPLE_ID  190
 
 static struct uip_udp_conn *server_conn;
+//int packets_received;
 
 PROCESS(udp_server_process, "UDP server process");
 AUTOSTART_PROCESSES(&udp_server_process);
@@ -64,6 +65,8 @@ tcpip_handler(void)
     appdata = (char *)uip_appdata;
     appdata[uip_datalen()] = 0;
     PRINTF("DATA recv '%s' from ", appdata);
+    //packets_received++;
+
     PRINTF("%d",
            UIP_IP_BUF->srcipaddr.u8[sizeof(UIP_IP_BUF->srcipaddr.u8) - 1]);
     PRINTF("\n");
@@ -100,7 +103,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
 {
   uip_ipaddr_t ipaddr;
   struct uip_ds6_addr *root_if;
-
+  //packets_received = 0;
   PROCESS_BEGIN();
 
   PROCESS_PAUSE();
@@ -161,9 +164,24 @@ PROCESS_THREAD(udp_server_process, ev, data)
   PRINT6ADDR(&server_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n", UIP_HTONS(server_conn->lport),
          UIP_HTONS(server_conn->rport));
-
+  /*char* packets_str;
+    char* name_with_extension;
+    char* text_for_printing = "TEST: number of packets received: ";
+    int counter = 0;*/
   while(1) {
+	  /*counter++;
+	  if(counter%10 == 0){
+
+		  puts("hello world");
+		  puts(counter);
+		  printf(packets_str, "%d", packets_received); // Now packets_str contains the integer as characters
+		  name_with_extension = malloc(strlen(text_for_printing)+1+4); // make space for the new string (should check the return value ...)
+		  strcpy(name_with_extension, text_for_printing); // copy name into the new var
+		  strcat(name_with_extension, packets_str); // add the extension
+		  puts(name_with_extension);
+	  }*/
     PROCESS_YIELD();
+
     if(ev == tcpip_event) {
       tcpip_handler();
     } else if (ev == sensors_event && data == &button_sensor) {
@@ -172,6 +190,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
     }
   }
 
+      //free(name_with_extension);
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
