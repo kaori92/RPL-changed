@@ -40,7 +40,7 @@
  * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
  */
 
-#include "net/rpl/rpl-mrhof.h"
+
 #include "contiki.h"
 #include "net/rpl/rpl-private.h"
 #include "net/uip.h"
@@ -56,6 +56,161 @@
 #define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
+/* custom LIST ---------------------------------------------------------------------------*/
+ struct node {
+	rpl_parent_t* data;
+    struct node* next;
+};
+
+ typedef struct node node;
+
+
+node* ll_create(rpl_parent_t* data,node* next)
+{
+    node* new_node = (node*)malloc(sizeof(node));
+    if(new_node == NULL)
+    {
+        printf("Error creating a new node.\n");
+        exit(0);
+    }
+    new_node->data = data;
+    new_node->next = next;
+
+    return new_node;
+}
+
+node* ll_prepend(node* head,rpl_parent_t* data)
+{
+    node* new_node = ll_create(data,head);
+    head = new_node;
+    return head;
+}
+
+rpl_parent_t* ll_count(node *head)
+{
+    node *cursor = head;
+    rpl_parent_t* c = 0;
+    while(cursor != NULL)
+    {
+        c++;
+        cursor = cursor->next;
+    }
+    return c;
+}
+
+
+node* ll_append(node* head, rpl_parent_t* data)
+{
+    /* go to the last node */
+    node *cursor = head;
+    while(cursor->next != NULL)
+        cursor = cursor->next;
+
+    /* create a new node */
+    node* new_node =  ll_create(data,NULL);
+    cursor->next = new_node;
+
+    return head;
+}
+
+/*
+    insert a new node after the prev node
+*/
+node* ll_insert_after(node *head, rpl_parent_t* data, node* prev)
+{
+    /* find the prev node, starting from the first node*/
+    node *cursor = head;
+    while(cursor != prev)
+        cursor = cursor->next;
+
+    if(cursor != NULL)
+    {
+        node* new_node = ll_create(data,cursor->next);
+        cursor->next = new_node;
+        return head;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+node* ll_remove_front(node* head)
+{
+    if(head == NULL)
+        return NULL;
+    node *front = head;
+    head = head->next;
+    front->next = NULL;
+    /* is this the last node in the list */
+    if(front == head)
+        head = NULL;
+    free(front);
+    return head;
+}
+
+node* ll_remove_back(node* head)
+{
+    if(head == NULL)
+        return NULL;
+
+    node *cursor = head;
+    node *back = NULL;
+    while(cursor->next != NULL)
+    {
+        back = cursor;
+        cursor = cursor->next;
+    }
+    if(back != NULL)
+        back->next = NULL;
+
+    /* if this is the last node in the list*/
+    if(cursor == head)
+        head = NULL;
+
+    free(cursor);
+
+    return head;
+}
+
+node* ll_remove_any(node* head,node* nd)
+{
+    /* if the node is the first node */
+    if(nd == head)
+    {
+        head = ll_remove_front(head);
+        return head;
+    }
+
+    /* if the node is the last node */
+    if(nd->next == NULL)
+    {
+        head = ll_remove_back(head);
+        return head;
+    }
+
+    /* if the node is in the middle */
+    node* cursor = head;
+    while(cursor != NULL)
+    {
+        if(cursor->next == nd) // was =
+            break;
+        cursor = cursor->next;
+    }
+
+    if(cursor != NULL)
+    {
+        node* tmp = cursor->next;
+        cursor->next = tmp->next;
+        tmp->next = NULL;
+        free(tmp);
+    }
+    return head;
+}
+
+/*End of custom list---------------------------------------------------------------------------*/
+rpl_parent_t *head;
+
 #if UIP_CONF_IPV6
 /*---------------------------------------------------------------------------*/
 extern rpl_of_t RPL_OF;
@@ -69,13 +224,11 @@ static rpl_of_t * const objective_functions[] = {&RPL_OF};
 #else
 #define RPL_GROUNDED                    RPL_CONF_GROUNDED
 #endif /* !RPL_CONF_GROUNDED */
-
+/* Maintain a list of all parents. */
+//LIST_STRUCT(all_parents);
 /*---------------------------------------------------------------------------*/
 /* Per-parent RPL information */
 NBR_TABLE(rpl_parent_t, rpl_parents);
-/*---------------------------------------------------------------------------*/
-/* Maintain a list of all parents. */
-LIST_STRUCT(all_parents);
 /*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
@@ -85,7 +238,7 @@ void
 rpl_dag_init(void)
 {
   nbr_table_register(rpl_parents, (nbr_table_callback *)rpl_remove_parent);
-  list_init(all_parents);
+  //list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
 rpl_rank_t
@@ -142,32 +295,6 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     dag->preferred_parent = p;
   }
 }
-
-/*---------------------------------------------------------------------------*/
-static rpl_parent_t *
-rpl_set_another_preferred_parent(rpl_dag_t *dag)
-{
-	//TODO
-	// find the best parent from all_parents
-	rpl_parent_t *current;
-	rpl_parent_t *best;
-
-	current = list_head(all_parents);
-	  while(current != NULL) {
-		  if(best == NULL){
-			  best = current;
-		  }
-		  else {
-			  best = best_parent_of0(current, best);
-			  //best = best_parent_mrhof(current, best);
-
-		  }
-		  current = list_item_next(current);
-	  }
-
-	dag->preferred_parent = best;
-	return best;
-}
 /*---------------------------------------------------------------------------*/
 /* Greater-than function for the lollipop counter.                      */
 /*---------------------------------------------------------------------------*/
@@ -201,6 +328,31 @@ remove_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
     }
     p = nbr_table_next(rpl_parents, p);
   }
+}
+/*---------------------------------------------------------------------------*/
+static rpl_parent_t *
+rpl_set_another_preferred_parent(rpl_dag_t *dag)
+{
+	//TODO
+	// find the best parent from all parents
+	rpl_parent_t *cursor;
+	rpl_parent_t *best;
+
+	cursor = head;
+	  while(cursor != NULL) {
+		  if(best == NULL){
+			  best = cursor;
+		  }
+		  else {
+			  best = best_parent_of0(cursor, best);
+			  //best = best_parent_mrhof(current, best);
+
+		  }
+		  cursor = cursor->next;
+	  }
+
+	dag->preferred_parent = best;
+	return best;
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -639,12 +791,12 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   last_parent = instance->current_dag->preferred_parent;
 
   // TODO:
-  /*if(last_parent == NULL){
-	  // preferred parent failed, setting to another most preferred parent
-	  // getting the next most preferred parent from all_parents
+    if(last_parent == NULL){
+  	  // preferred parent failed, setting to another most preferred parent
+  	  // getting the next most preferred parent from all_parents
 
-	  rpl_set_another_preferred_parent(instance->current_dag);
-  }*/
+  	  rpl_set_another_preferred_parent(instance->current_dag);
+    }
 
   best_dag = instance->current_dag;
   if(best_dag->rank != ROOT_RANK(instance)) {
@@ -733,13 +885,15 @@ rpl_select_parent(rpl_dag_t *dag)
   rpl_parent_t *p, *best;
 
   best = NULL;
-  PRINTF("RPL: Entering rpl_select_parent, adding all parents for this node: ");
-  PRINTF("\n");
+  node* head_ = NULL;
   p = nbr_table_head(rpl_parents);
+  typedef void (*callback)(node* data);
   while(p != NULL) {
-	  list_add(all_parents, p);
-	  PRINTF("RPL: Adding a parent to a list of all parents: %d", p->rank);
-	  PRINTF("\n");
+	  //list_add(all_parents, p);
+
+	  head_ = ll_append(head_,p);
+	  //PRINTF("RPL: Adding a parent to a list of all parents: %d", p->rank);
+	  //PRINTF("\n");
     if(p->rank == INFINITE_RANK) {
       /* ignore this neighbor */
     } else if(best == NULL) {
@@ -754,94 +908,11 @@ rpl_select_parent(rpl_dag_t *dag)
     rpl_set_preferred_parent(dag, best);
   }
   //TODO:
-  /*if(dag->preferred_parent == NULL){
-  	  best = rpl_set_another_preferred_parent(dag);
-  }*/
+   if(dag->preferred_parent == NULL){
+   	  best = rpl_set_another_preferred_parent(dag);
+   }
+  head = head_;
   return best;
-}
-/*---------------------------------------------------------------------------*/
-static rpl_path_metric_t
-calculate_path_metric(rpl_parent_t *p)
-{
-  if(p == NULL) {
-    return MAX_PATH_COST * RPL_DAG_MC_ETX_DIVISOR;
-  }
-
-#if RPL_DAG_MC == RPL_DAG_MC_NONE
-  return p->rank + (uint16_t)p->link_metric;
-#elif RPL_DAG_MC == RPL_DAG_MC_ETX
-  return p->mc.obj.etx + (uint16_t)p->link_metric;
-#elif RPL_DAG_MC == RPL_DAG_MC_ENERGY
-  return p->mc.obj.energy.energy_est + (uint16_t)p->link_metric;
-#else
-#error "Unsupported RPL_DAG_MC configured. See rpl.h."
-#endif /* RPL_DAG_MC */
-}
-/*---------------------------------------------------------------------------*/
-static rpl_parent_t *
-best_parent_mrhof(rpl_parent_t *p1, rpl_parent_t *p2)
-{
-  rpl_dag_t *dag;
-  rpl_path_metric_t min_diff;
-  rpl_path_metric_t p1_metric;
-  rpl_path_metric_t p2_metric;
-
-  dag = p1->dag; /* Both parents are in the same DAG. */
-
-  min_diff = RPL_DAG_MC_ETX_DIVISOR /
-             PARENT_SWITCH_THRESHOLD_DIV;
-
-  p1_metric = calculate_path_metric(p1);
-  p2_metric = calculate_path_metric(p2);
-
-  /* Maintain stability of the preferred parent in case of similar ranks. */
-  if(p1 == dag->preferred_parent || p2 == dag->preferred_parent) {
-    if(p1_metric < p2_metric + min_diff &&
-       p1_metric > p2_metric - min_diff) {
-      PRINTF("RPL: MRHOF hysteresis: %u <= %u <= %u\n",
-             p2_metric - min_diff,
-             p1_metric,
-             p2_metric + min_diff);
-      return dag->preferred_parent;
-    }
-  }
-
-  return p1_metric < p2_metric ? p1 : p2;
-}
-/*---------------------------------------------------------------------------*/
-static rpl_parent_t *
-best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
-{
-  int MIN_DIFFERENCE = (RPL_MIN_HOPRANKINC + RPL_MIN_HOPRANKINC / 2);
-  rpl_rank_t r1, r2;
-  rpl_dag_t *dag;
-
-  PRINTF("RPL: Comparing parent ");
-  PRINT6ADDR(rpl_get_parent_ipaddr(p1));
-  PRINTF(" (confidence %d, rank %d) with parent ",
-        p1->link_metric, p1->rank);
-  PRINT6ADDR(rpl_get_parent_ipaddr(p2));
-  PRINTF(" (confidence %d, rank %d)\n",
-        p2->link_metric, p2->rank);
-
-
-  r1 = DAG_RANK(p1->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC  +
-         p1->link_metric;
-  r2 = DAG_RANK(p2->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC  +
-         p2->link_metric;
-  /* Compare two parents by looking both and their rank and at the ETX
-     for that parent. We choose the parent that has the most
-     favourable combination. */
-
-  dag = (rpl_dag_t *)p1->dag; /* Both parents must be in the same DAG. */
-  if(r1 < r2 + MIN_DIFFERENCE &&
-     r1 > r2 - MIN_DIFFERENCE) {
-    return dag->preferred_parent;
-  } else if(r1 < r2) {
-    return p1;
-  } else {
-    return p2;
-  }
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -935,6 +1006,40 @@ rpl_get_instance(uint8_t instance_id)
   }
   return NULL;
 }
+
+/*---------------------------------------------------------------------------*/
+static rpl_parent_t *
+best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
+{
+  int MIN_DIFFERENCE = (RPL_MIN_HOPRANKINC + RPL_MIN_HOPRANKINC / 2);
+  rpl_rank_t r1, r2;
+  rpl_dag_t *dag;
+
+  PRINTF("RPL: Comparing parent ");
+  PRINT6ADDR(rpl_get_parent_ipaddr(p1));
+  PRINTF(" (confidence %d, rank %d) with parent ",
+        p1->link_metric, p1->rank);
+  PRINT6ADDR(rpl_get_parent_ipaddr(p2));
+  PRINTF(" (confidence %d, rank %d)\n",
+        p2->link_metric, p2->rank);
+
+
+  r1 = DAG_RANK(p1->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC  +
+         p1->link_metric;
+  r2 = DAG_RANK(p2->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC  +
+         p2->link_metric;
+  // Compare two parents by looking both and their rank and at the ETX for that parent. We choose the parent that has the most favourable combination.
+
+  dag = (rpl_dag_t *)p1->dag; // Both parents must be in the same DAG.
+  if(r1 < r2 + MIN_DIFFERENCE &&
+     r1 > r2 - MIN_DIFFERENCE) {
+    return dag->preferred_parent;
+  } else if(r1 < r2) {
+    return p1;
+  } else {
+    return p2;
+  }
+}
 /*---------------------------------------------------------------------------*/
 rpl_of_t *
 rpl_find_of(rpl_ocp_t ocp)
@@ -1024,10 +1129,10 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
   rpl_set_preferred_parent(dag, p);
 
   //TODO
-  /*if(dag->preferred_parent == NULL){
-	  // setting another preferred parent
-	  rpl_set_another_preferred_parent(dag);
-  }*/
+    if(dag->preferred_parent == NULL){
+  	  // setting another preferred parent
+  	  rpl_set_another_preferred_parent(dag);
+    }
 
   instance->of->update_metric_container(instance);
   dag->rank = instance->of->calculate_rank(p, 0);
@@ -1120,11 +1225,11 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
   /* copy prefix information into the dag */
   memcpy(&dag->prefix_info, &dio->prefix_info, sizeof(rpl_prefix_t));
 
-  //TODO
   rpl_set_preferred_parent(dag, p);
-  /*if(dag->preferred_parent == NULL){
-	  rpl_set_another_preferred_parent(dag);
-  }*/
+  //TODO
+  if(dag->preferred_parent == NULL){
+  	rpl_set_another_preferred_parent(dag);
+  }
 
   dag->rank = instance->of->calculate_rank(p, 0);
   dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */
