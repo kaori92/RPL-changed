@@ -333,6 +333,7 @@ remove_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
+	PRINTF("RPL: setting another preferred parent\n");
 	//TODO
 	// find the best parent from all parents
 	rpl_parent_t *cursor;

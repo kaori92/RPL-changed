@@ -34,11 +34,20 @@
 #include "net/uip-ds6.h"
 #include "net/uip-udp-packet.h"
 #include "sys/ctimer.h"
+#include "collect-common.h"
 #ifdef WITH_COMPOWER
 #include "powertrace.h"
 #endif
 #include <stdio.h>
 #include <string.h>
+#include "net/rpl/rpl.h"
+#include "dev/serial-line.h"
+#include "../apps/collect-view/collect-view.h"
+#if CONTIKI_TARGET_Z1
+#include "dev/uart0.h"
+#else
+#include "dev/uart1.h"
+#endif
 
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
@@ -59,11 +68,113 @@
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
-//int packets_received;
+
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
 AUTOSTART_PROCESSES(&udp_client_process);
 /*---------------------------------------------------------------------------*/
+void
+collect_common_set_sink(void)
+{
+  /* A udp client can never become sink */
+}
+/*-*/
+void
+collect_common_net_print(void)
+{
+  rpl_dag_t *dag;
+  uip_ds6_route_t *r;
+
+  /* Let's suppose we have only one instance */
+  dag = rpl_get_any_dag();
+  if(dag->preferred_parent != NULL) {
+    PRINTF("Preferred parent: ");
+    PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
+    PRINTF("\n");
+  }
+  for(r = uip_ds6_route_head();
+      r != NULL;
+      r = uip_ds6_route_next(r)) {
+    PRINT6ADDR(&r->ipaddr);
+  }
+  PRINTF("---\n");
+}
+void
+collect_common_send(void)
+{
+  static uint8_t seqno;
+  struct {
+    uint8_t seqno;
+    uint8_t for_alignment;
+    struct collect_view_data_msg msg;
+  } msg;
+  /* struct collect_neighbor *n; */
+  uint16_t parent_etx;
+  uint16_t rtmetric;
+  uint16_t num_neighbors;
+  uint16_t beacon_interval;
+  rpl_parent_t *preferred_parent;
+  rimeaddr_t parent;
+  rpl_dag_t *dag;
+
+  if(client_conn == NULL) {
+    /* Not setup yet */
+    return;
+  }
+  memset(&msg, 0, sizeof(msg));
+  seqno++;
+  if(seqno == 0) {
+    /* Wrap to 128 to identify restarts */
+    seqno = 128;
+  }
+  msg.seqno = seqno;
+
+  rimeaddr_copy(&parent, &rimeaddr_null);
+  parent_etx = 0;
+
+  /* Let's suppose we have only one instance */
+  dag = rpl_get_any_dag();
+  if(dag != NULL) {
+    preferred_parent = dag->preferred_parent;
+    if(preferred_parent != NULL) {
+      uip_ds6_nbr_t *nbr;
+      nbr = uip_ds6_nbr_lookup(rpl_get_parent_ipaddr(preferred_parent));
+      if(nbr != NULL) {
+        /* Use parts of the IPv6 address as the parent address, in reversed byte order. */
+        parent.u8[RIMEADDR_SIZE - 1] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 2];
+        parent.u8[RIMEADDR_SIZE - 2] = nbr->ipaddr.u8[sizeof(uip_ipaddr_t) - 1];
+        parent_etx = rpl_get_parent_rank((rimeaddr_t *) uip_ds6_nbr_get_ll(nbr)) / 2;
+      }
+    }
+    rtmetric = dag->rank;
+    beacon_interval = (uint16_t) ((2L << dag->instance->dio_intcurrent) / 1000);
+    num_neighbors = RPL_PARENT_COUNT(dag);
+  } else {
+    rtmetric = 0;
+    beacon_interval = 0;
+    num_neighbors = 0;
+  }
+
+  /* num_neighbors = collect_neighbor_list_num(&tc.neighbor_list); */
+  collect_view_construct_message(&msg.msg, &parent,
+                                 parent_etx, rtmetric,
+                                 num_neighbors, beacon_interval);
+
+  uip_udp_packet_sendto(client_conn, &msg, sizeof(msg),
+                        &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
+}
+
+void
+collect_common_net_init(void)
+{
+#if CONTIKI_TARGET_Z1
+  uart0_set_input(serial_line_input_byte);
+#else
+  uart1_set_input(serial_line_input_byte);
+#endif
+  serial_line_init();
+}
+
 static void
 tcpip_handler(void)
 {
@@ -73,7 +184,7 @@ tcpip_handler(void)
     str = uip_appdata;
     str[uip_datalen()] = '\0';
     printf("DATA recv '%s'\n", str);
-    //packets_received++;
+
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -180,28 +291,14 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #endif
 
   etimer_set(&periodic, SEND_INTERVAL);
-  /*char* packets_str;
-  char* name_with_extension;
-  const char* text_for_printing = "TEST: number of packets received by client: ";*/
-  //char text[] = "TEST: number of packets received by client: ";
-  //packets_received = 0;
-  /*printf(packets_str, "%d", packets_received); // Now packets_str contains the integer as characters
-  name_with_extension = malloc(strlen(text_for_printing)+1+4); // make space for the new string (should check the return value ...)
-  strcpy(name_with_extension, text_for_printing); // copy name into the new var
-  strcat(name_with_extension, packets_str); // add the extension
-  puts(name_with_extension);
-  printf("hello");*/
-  while(1) {
-	  //printf("TEST: number of packets received by client: %d", packets_received);
 
+  while(1) {
 
     PROCESS_YIELD();
 
     if(ev == tcpip_event) {
       tcpip_handler();
     }
-    //text[44] = packets_received + '0';
-    //puts(text);
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
       ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
@@ -217,7 +314,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
     }
   }
-  //free(name_with_extension);
+
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
