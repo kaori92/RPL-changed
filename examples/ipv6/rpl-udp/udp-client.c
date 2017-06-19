@@ -59,7 +59,7 @@
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
-int packets_received;
+//int packets_received;
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
 AUTOSTART_PROCESSES(&udp_client_process);
@@ -73,7 +73,7 @@ tcpip_handler(void)
     str = uip_appdata;
     str[uip_datalen()] = '\0';
     printf("DATA recv '%s'\n", str);
-    packets_received++;
+    //packets_received++;
   }
 }
 /*---------------------------------------------------------------------------*/
