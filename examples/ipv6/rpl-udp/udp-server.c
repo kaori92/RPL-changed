@@ -32,26 +32,15 @@
 #include "contiki-net.h"
 #include "net/uip.h"
 #include "net/rpl/rpl.h"
-#include "collect-common.h"
-#include "../apps/collect-view/collect-view.h"
-#include "net/rime/rimeaddr.h"
 
 #include "net/netstack.h"
 #include "dev/button-sensor.h"
-#include "dev/serial-line.h"
-
-#if CONTIKI_TARGET_Z1
-#include "dev/uart0.h"
-#else
-#include "dev/uart1.h"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
 #define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
@@ -65,37 +54,6 @@ static struct uip_udp_conn *server_conn;
 
 PROCESS(udp_server_process, "UDP server process");
 AUTOSTART_PROCESSES(&udp_server_process);
-
-void
-collect_common_set_sink(void)
-{
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_common_net_print(void)
-{
-  printf("I am sink!\n");
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_common_send(void)
-{
-  /* Server never sends */
-}
-/*---------------------------------------------------------------------------*/
-void
-collect_common_net_init(void)
-{
-#if CONTIKI_TARGET_Z1
-  uart0_set_input(serial_line_input_byte);
-#else
-  uart1_set_input(serial_line_input_byte);
-#endif
-  serial_line_init();
-
-  PRINTF("I am sink!\n");
-}
-
 /*---------------------------------------------------------------------------*/
 static void
 tcpip_handler(void)
