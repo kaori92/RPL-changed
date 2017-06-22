@@ -7,6 +7,12 @@
 
 #include "collect-view-sky.h"
 
+static uint16_t
+get_temp()
+{
+  /* XXX Fix me: check /examples/z1/test-tmp102.c for correct conversion */
+  return (uint16_t)tmp102_read_temp_raw();
+}
 /*---------------------------------------------------------------------------*/
 void
 collect_view_arch_read_sensors(struct collect_view_data_msg *msg)

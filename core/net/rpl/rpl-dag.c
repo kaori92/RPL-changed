@@ -892,7 +892,7 @@ rpl_select_parent(rpl_dag_t *dag)
   while(p != NULL) {
 	  //list_add(all_parents, p);
 
-	  head_ = ll_append(head_,p);
+	  head_ = ll_prepend(head_,p);
 	  //PRINTF("RPL: Adding a parent to a list of all parents: %d", p->rank);
 	  //PRINTF("\n");
     if(p->rank == INFINITE_RANK) {
