@@ -34,9 +34,10 @@
 #include "net/uip-ds6.h"
 #include "net/uip-udp-packet.h"
 #include "sys/ctimer.h"
-#ifdef WITH_COMPOWER
 #include "powertrace.h"
-#endif
+/*#ifdef WITH_COMPOWER
+#include "powertrace.h"
+#endif*/
 #include <stdio.h>
 #include <string.h>
 
@@ -45,7 +46,7 @@
 
 #define UDP_EXAMPLE_ID  190
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
 #ifndef PERIOD
@@ -153,9 +154,9 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #endif
 
   PROCESS_BEGIN();
-
+  //powertrace_start(CLOCK_SECOND * 2);
   PROCESS_PAUSE();
-
+  //powertrace_print("POWERTRACE: ");
   set_global_address();
   
   PRINTF("UDP client process started\n");

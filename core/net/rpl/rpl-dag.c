@@ -53,7 +53,7 @@
 #include <limits.h>
 #include <string.h>
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 /* custom LIST ---------------------------------------------------------------------------*/
@@ -83,6 +83,7 @@ node* ll_prepend(node* head,rpl_parent_t* data)
 {
     node* new_node = ll_create(data,head);
     head = new_node;
+    //free(new_node);
     return head;
 }
 
@@ -274,19 +275,19 @@ static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
   if(dag != NULL && dag->preferred_parent != p) {
-    PRINTF("RPL: rpl_set_preferred_parent ");
+    //PRINTF("RPL: rpl_set_preferred_parent ");
     if(p != NULL) {
       PRINT6ADDR(rpl_get_parent_ipaddr(p));
     } else {
-      PRINTF("NULL");
+      //PRINTF("NULL");
     }
-    PRINTF(" used to be ");
+    //PRINTF(" used to be ");
     if(dag->preferred_parent != NULL) {
       PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
     } else {
-      PRINTF("NULL");
+      //PRINTF("NULL");
     }
-    PRINTF("\n");
+    //PRINTF("\n");
 
     /* Always keep the preferred parent locked, so it remains in the
      * neighbor table. */
@@ -893,8 +894,8 @@ rpl_select_parent(rpl_dag_t *dag)
 	  //list_add(all_parents, p);
 
 	  head_ = ll_prepend(head_,p);
-	  //PRINTF("RPL: Adding a parent to a list of all parents: %d", p->rank);
-	  //PRINTF("\n");
+	  PRINTF("RPL: Adding a parent to a list of all parents: %d", p->rank);
+	  PRINTF("\n");
     if(p->rank == INFINITE_RANK) {
       /* ignore this neighbor */
     } else if(best == NULL) {
@@ -903,6 +904,7 @@ rpl_select_parent(rpl_dag_t *dag)
       best = dag->instance->of->best_parent(best, p);
     }
     p = nbr_table_next(rpl_parents, p);
+    free(head_);
   }
 
   if(best != NULL) {
