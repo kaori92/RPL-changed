@@ -39,9 +39,13 @@
  *
  * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
  */
+#ifndef       CLOCKS_PER_SEC
+#define       CLOCKS_PER_SEC  1000000L
+#endif        /* CLOCKS_PER_SEC */
 
 
 #include "contiki.h"
+#include <sys/time.h>
 #include "net/rpl/rpl-private.h"
 #include "net/uip.h"
 #include "net/uip-nd6.h"
@@ -49,12 +53,16 @@
 #include "lib/list.h"
 #include "lib/memb.h"
 #include "sys/ctimer.h"
-
+#include <time.h>
+#include <stdio.h>
 #include <limits.h>
 #include <string.h>
-
+#include <stdlib.h>
+#include <math.h>
 #define DEBUG DEBUG_PRINT
+
 #include "net/uip-debug.h"
+
 
 /* custom LIST ---------------------------------------------------------------------------*/
  struct node {
@@ -340,7 +348,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 	rpl_parent_t *cursor;
 	rpl_parent_t *best;
 
-	cursor = head;
+	cursor = head; // head of the list of parents
 	  while(cursor != NULL) {
 		  if(best == NULL){
 			  best = cursor;
@@ -781,6 +789,18 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
     return NULL;
   }
 }
+
+// solution 3:
+void timeval_print(struct timeval *tv)
+{
+    char buffer[30];
+    time_t curtime;
+
+    printf("%ld.%06ld", tv->tv_sec, tv->tv_usec);
+    curtime = tv->tv_sec;
+    strftime(buffer, 30, "%m-%d-%Y  %T", localtime(&curtime));
+    printf(" = %s.%06ld\n", buffer, tv->tv_usec);
+}
 /*---------------------------------------------------------------------------*/
 rpl_dag_t *
 rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
@@ -792,13 +812,72 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   old_rank = instance->current_dag->rank;
   last_parent = instance->current_dag->preferred_parent;
 
+  // solution 1:
+  /*time_t start_t, stop;
+  clock_t ticks;
+  long count;
+
+  time(&start_t);
+  int k = 4/3;
+  time(&stop);
+  printf("Finnished in %f seconds. \n", difftime(stop, start_t));*/
+
+  // solution 2:
+  /*struct timespec start, end;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start); // get initial time-stamp
+
+  // ... do stuff ... //
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);   // get final time-stamp
+
+  double t_ns = (double)(end.tv_sec - start.tv_sec) * 1.0e9 +
+                (double)(end.tv_nsec - start.tv_nsec);
+                                                   // subtract time-stamps and
+                                                   // multiply to get elapsed
+                                                   // time in ns
+  */
+  // solution 3:
+
+  struct timeval tvBegin, tvEnd, tvDiff;
+
+      // begin
+      gettimeofday(&tvBegin, NULL);
+      timeval_print(&tvBegin);
+
+      // lengthy operation
+      int i,j;
+      for(i=0;i<999999L;++i) {
+          j=sqrt(i);
+      }
+
+      //end
+      gettimeofday(&tvEnd, NULL);
+      timeval_print(&tvEnd);
+
+      // diff
+      timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
+      printf("%ld.%06ld\n", tvDiff.tv_sec, tvDiff.tv_usec);
+
+  // solution 4:
+  //TODO odkomentowac:
+  /*clock_t start, diff;
+
   // TODO:
     if(last_parent == NULL){
   	  // preferred parent failed, setting to another most preferred parent
+      start = clock();
   	  // getting the next most preferred parent from all_parents
-
   	  rpl_set_another_preferred_parent(instance->current_dag);
-    }
+
+  	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
+  	  if(instance->current_dag->preferred_parent != NULL && (instance->current_dag->preferred_parent->dag->preferred_parent != NULL
+  			  || instance->current_dag->preferred_parent->dag->rank == ROOT_RANK(instance))){
+  		  diff = clock() - start;
+  		  int msec = diff * 1000 / CLOCKS_PER_SEC;
+  		  printf("RPL: Time taken for reconstruction: %d seconds %d milliseconds", msec/1000, msec%1000);
+  	  }
+
+    }*/
 
   best_dag = instance->current_dag;
   if(best_dag->rank != ROOT_RANK(instance)) {
