@@ -62,7 +62,37 @@
 
 #include "net/uip-debug.h"
 
+uint16_t end_ms_select_parent = 0;
+uint16_t start_ms_select_parent = 0;
+uint16_t start_ms_select_dag = 0;
+uint16_t start_ms_add_dag = 0;
+uint16_t start_ms_join_instance = 0;
 
+rpl_parent_t *head;
+
+#if UIP_CONF_IPV6
+/*---------------------------------------------------------------------------*/
+extern rpl_of_t RPL_OF;
+static rpl_of_t * const objective_functions[] = {&RPL_OF};
+
+/*---------------------------------------------------------------------------*/
+/* RPL definitions. */
+
+#ifndef RPL_CONF_GROUNDED
+#define RPL_GROUNDED                    0
+#else
+#define RPL_GROUNDED                    RPL_CONF_GROUNDED
+#endif /* !RPL_CONF_GROUNDED */
+/* Maintain a list of all parents. */
+//LIST_STRUCT(all_parents);
+/*---------------------------------------------------------------------------*/
+/* Per-parent RPL information */
+NBR_TABLE(rpl_parent_t, rpl_parents);
+/*---------------------------------------------------------------------------*/
+/* Allocate instance table. */
+rpl_instance_t instance_table[RPL_MAX_INSTANCES];
+rpl_instance_t *default_instance;
+/*---------------------------------------------------------------------------*/
 /* custom LIST ---------------------------------------------------------------------------*/
  struct node {
 	rpl_parent_t* data;
@@ -217,31 +247,7 @@ node* ll_remove_any(node* head,node* nd)
 }
 
 /*End of custom list---------------------------------------------------------------------------*/
-rpl_parent_t *head;
 
-#if UIP_CONF_IPV6
-/*---------------------------------------------------------------------------*/
-extern rpl_of_t RPL_OF;
-static rpl_of_t * const objective_functions[] = {&RPL_OF};
-
-/*---------------------------------------------------------------------------*/
-/* RPL definitions. */
-
-#ifndef RPL_CONF_GROUNDED
-#define RPL_GROUNDED                    0
-#else
-#define RPL_GROUNDED                    RPL_CONF_GROUNDED
-#endif /* !RPL_CONF_GROUNDED */
-/* Maintain a list of all parents. */
-//LIST_STRUCT(all_parents);
-/*---------------------------------------------------------------------------*/
-/* Per-parent RPL information */
-NBR_TABLE(rpl_parent_t, rpl_parents);
-/*---------------------------------------------------------------------------*/
-/* Allocate instance table. */
-rpl_instance_t instance_table[RPL_MAX_INSTANCES];
-rpl_instance_t *default_instance;
-/*---------------------------------------------------------------------------*/
 void
 rpl_dag_init(void)
 {
@@ -818,27 +824,13 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   	  // preferred parent failed, setting to another most preferred parent
     	clock_time_t start_time = clock_time(); // Get the system time.
     	  //printf("TEST start_time : %d\n", start_time);
-    	  uint16_t mil_start = milliseconds(start_time);
-    	  printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_time));
-
+    	  start_ms_select_dag = milliseconds(start_time);
+    	  printf("TEST milliseconds(start_ms_select_dag) : %d\n", milliseconds(start_ms_select_dag));
     	  // lengthy operation
-
       	  // getting the next most preferred parent from all_parents
     	  rpl_set_another_preferred_parent(instance->current_dag);
 
   	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
-  	  if(instance->current_dag->preferred_parent != NULL && (instance->current_dag->preferred_parent->dag->preferred_parent != NULL
-  			  || instance->current_dag->preferred_parent->dag->rank == ROOT_RANK(instance))){
-  		clock_time_t end_time = clock_time(); // Get the system time.
-  		    	  uint16_t mil_end = milliseconds(end_time);
-  		    	    printf("TEST milliseconds(end_time) : %d\n", milliseconds(end_time));
-
-  		    	  //printf("TEST end_time: %d\n", end_time);
-  		    	  int difference = mil_end - mil_start;
-  		    	  printf("TEST elapsed time in ms: %d\n", difference);
-  		  //printf("RPL: Time taken for reconstruction: %d seconds %d milliseconds", msec/1000, msec%1000);
-  	  }
-
     }
 
   best_dag = instance->current_dag;
@@ -847,8 +839,10 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
       if(p->dag != best_dag) {
         best_dag = instance->of->best_dag(best_dag, p->dag);
       }
+
     } else if(p->dag == best_dag) {
       best_dag = NULL;
+
       for(dag = &instance->dag_table[0], end = dag + RPL_MAX_DAG_PER_INSTANCE; dag < end; ++dag) {
         if(dag->used && dag->preferred_parent != NULL && dag->preferred_parent->rank != INFINITE_RANK) {
           if(best_dag == NULL) {
@@ -954,28 +948,12 @@ rpl_select_parent(rpl_dag_t *dag)
   //TODO:
    if(dag->preferred_parent == NULL){
 	   // preferred parent failed, setting to another most preferred parent
-	      	clock_time_t start_time = clock_time(); // Get the system time.
+	      	clock_time_t start_time_select_parent = clock_time(); // Get the system time.
 	      	  //printf("TEST start_time : %d\n", start_time);
-	      	  uint16_t mil_start = milliseconds(start_time);
-	      	  printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_time));
-
-	      	  // lengthy operation
-
-	        	  // getting the next most preferred parent from all_parents
+	      	  start_ms_select_parent = milliseconds(start_time_select_parent);
+	      	  printf("TEST milliseconds(start_select_parent) : %d\n", milliseconds(start_time_select_parent));
+	      	  // getting the next most preferred parent from all_parents
 	       	  best = rpl_set_another_preferred_parent(dag);
-	    	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
-	    	  if(dag->preferred_parent != NULL && (dag->preferred_parent->dag->preferred_parent != NULL
-	    			  || dag->preferred_parent->dag->rank == ROOT_RANK(dag->instance))){
-	    		clock_time_t end_time = clock_time(); // Get the system time.
-	    		    	  uint16_t mil_end = milliseconds(end_time);
-	    		    	    printf("TEST milliseconds(end_time) : %d\n", milliseconds(end_time));
-
-	    		    	  //printf("TEST end_time: %d\n", end_time);
-	    		    	  int difference = mil_end - mil_start;
-	    		    	  printf("TEST elapsed time in ms: %d\n", difference);
-	    		  //printf("RPL: Time taken for reconstruction: %d seconds %d milliseconds", msec/1000, msec%1000);
-
-	    	  }
    }
   head = head_;
   return best;
@@ -1197,29 +1175,12 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
   //TODO
     if(dag->preferred_parent == NULL){
     	  // preferred parent failed, setting to another most preferred parent
-      	clock_time_t start_time = clock_time(); // Get the system time.
+      	  clock_time_t start_time = clock_time(); // Get the system time.
       	  //printf("TEST start_time : %d\n", start_time);
-      	  uint16_t mil_start = milliseconds(start_time);
-      	  printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_time));
-
-      	  // lengthy operation
-
-        	  // getting the next most preferred parent from all_parents
-
+      	  start_ms_join_instance = milliseconds(start_time);
+      	  printf("TEST milliseconds(start_ms_join_instance) : %d\n", milliseconds(start_ms_join_instance));
+      	  // getting the next most preferred parent from all_parents
       	  rpl_set_another_preferred_parent(dag);
-
-    	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
-    	  if(dag->preferred_parent != NULL && (dag->preferred_parent->dag->preferred_parent != NULL
-    			  || dag->preferred_parent->dag->rank == ROOT_RANK(instance))){
-    		clock_time_t end_time = clock_time(); // Get the system time.
-    		    	  uint16_t mil_end = milliseconds(end_time);
-    		    	    printf("TEST milliseconds(end_time) : %d\n", milliseconds(end_time));
-
-    		    	  //printf("TEST end_time: %d\n", end_time);
-    		    	  int difference = mil_end - mil_start;
-    		    	  printf("TEST elapsed time in ms: %d\n", difference);
-    		  //printf("RPL: Time taken for reconstruction: %d seconds %d milliseconds", msec/1000, msec%1000);
-    	  }
     }
 
   instance->of->update_metric_container(instance);
@@ -1317,29 +1278,12 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
   //TODO
   if(dag->preferred_parent == NULL){
 	  // preferred parent failed, setting to another most preferred parent
-	      	clock_time_t start_time = clock_time(); // Get the system time.
-	      	  //printf("TEST start_time : %d\n", start_time);
-	      	  uint16_t mil_start = milliseconds(start_time);
-	      	  printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_time));
-
-	      	  // lengthy operation
-
-	        	  // getting the next most preferred parent from all_parents
-
-	      	  rpl_set_another_preferred_parent(dag);
-
-	    	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
-	    	  if(dag->preferred_parent != NULL && (dag->preferred_parent->dag->preferred_parent != NULL
-	    			  || dag->preferred_parent->dag->rank == ROOT_RANK(instance))){
-	    		clock_time_t end_time = clock_time(); // Get the system time.
-	    		    	  uint16_t mil_end = milliseconds(end_time);
-	    		    	    printf("TEST milliseconds(end_time) : %d\n", milliseconds(end_time));
-
-	    		    	  //printf("TEST end_time: %d\n", end_time);
-	    		    	  int difference = mil_end - mil_start;
-	    		    	  printf("TEST elapsed time in ms: %d\n", difference);
-	    		  //printf("RPL: Time taken for reconstruction: %d seconds %d milliseconds", msec/1000, msec%1000);
-	    	  }
+	  clock_time_t start_time = clock_time(); // Get the system time.
+	  //printf("TEST start_time : %d\n", start_time);
+	  start_ms_add_dag = milliseconds(start_time);
+	  printf("TEST milliseconds(start_ms_add_dag) : %d\n", milliseconds(start_ms_add_dag));
+	  // getting the next most preferred parent from all_parents
+	  rpl_set_another_preferred_parent(dag);
   }
 
   dag->rank = instance->of->calculate_rank(p, 0);
