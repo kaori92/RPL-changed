@@ -45,20 +45,19 @@
 
 
 #include "contiki.h"
-#include <sys/time.h>
 #include "net/rpl/rpl-private.h"
 #include "net/uip.h"
 #include "net/uip-nd6.h"
 #include "net/nbr-table.h"
 #include "lib/list.h"
 #include "lib/memb.h"
-#include "sys/ctimer.h"
 #include <time.h>
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include "sys/timer.h"
 #define DEBUG DEBUG_PRINT
 
 #include "net/uip-debug.h"
@@ -790,17 +789,6 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
   }
 }
 
-// solution 3:
-void timeval_print(struct timeval *tv)
-{
-    char buffer[30];
-    time_t curtime;
-
-    printf("%ld.%06ld", tv->tv_sec, tv->tv_usec);
-    curtime = tv->tv_sec;
-    strftime(buffer, 30, "%m-%d-%Y  %T", localtime(&curtime));
-    printf(" = %s.%06ld\n", buffer, tv->tv_usec);
-}
 /*---------------------------------------------------------------------------*/
 rpl_dag_t *
 rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
@@ -812,6 +800,13 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   old_rank = instance->current_dag->rank;
   last_parent = instance->current_dag->preferred_parent;
 
+  clock_time_t start_time = clock_time(); // Get the system time.
+  printf("TEST start_time : %d\n", start_time);
+  // lengthy operation
+  clock_time_t end_time = clock_time(); // Get the system time.
+  printf("TEST end_time: %d\n", end_time);
+  int difference = end_time - start_time;
+  printf("TEST elapsed time: %d\n", difference);
   // solution 1:
   /*time_t start_t, stop;
   clock_t ticks;
@@ -836,27 +831,6 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
                                                    // multiply to get elapsed
                                                    // time in ns
   */
-  // solution 3:
-
-  struct timeval tvBegin, tvEnd, tvDiff;
-
-      // begin
-      gettimeofday(&tvBegin, NULL);
-      timeval_print(&tvBegin);
-
-      // lengthy operation
-      int i,j;
-      for(i=0;i<999999L;++i) {
-          j=sqrt(i);
-      }
-
-      //end
-      gettimeofday(&tvEnd, NULL);
-      timeval_print(&tvEnd);
-
-      // diff
-      timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
-      printf("%ld.%06ld\n", tvDiff.tv_sec, tvDiff.tv_usec);
 
   // solution 4:
   //TODO odkomentowac:
