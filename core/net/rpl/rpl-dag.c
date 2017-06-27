@@ -62,11 +62,10 @@
 
 #include "net/uip-debug.h"
 
-uint16_t end_ms_select_parent = 0;
-uint16_t start_ms_select_parent = 0;
-uint16_t start_ms_select_dag = 0;
-uint16_t start_ms_add_dag = 0;
-uint16_t start_ms_join_instance = 0;
+uint16_t start_ms_select_parent = -1;
+uint16_t start_ms_select_dag = -1;
+uint16_t start_ms_add_dag = -1;
+uint16_t start_ms_join_instance = -1;
 
 rpl_parent_t *head;
 
@@ -515,10 +514,39 @@ rpl_repair_root(uint8_t instance_id)
   }
 
   RPL_LOLLIPOP_INCREMENT(instance->current_dag->version);
+  compute_length_of_reconstruction();
   RPL_LOLLIPOP_INCREMENT(instance->dtsn_out);
   PRINTF("RPL: rpl_repair_root initiating global repair with version %d\n", instance->current_dag->version);
   rpl_reset_dio_timer(instance);
   return 1;
+}
+
+static void compute_length_of_reconstruction(){
+	if(start_ms_select_parent != -1){
+		clock_time_t end_time_select_parent = clock_time(); // Get the system time.
+		uint16_t end_ms_select_parent = milliseconds(end_time_select_parent);
+		printf("TEST milliseconds(end_time_select_parent) : %d\n", milliseconds(end_ms_select_parent));
+		int difference_select_parent = end_ms_select_parent - start_ms_select_parent;
+		printf("TEST elapsed time in ms difference_select_parent: %d\n", difference_select_parent);
+	} else if(start_ms_select_dag != -1){
+		clock_time_t end_time_select_dag = clock_time(); // Get the system time.
+		uint16_t end_ms_select_dag = milliseconds(end_time_select_dag);
+		printf("TEST milliseconds(end_time_select_dag) : %d\n", milliseconds(end_ms_select_dag));
+		int difference_select_dag = end_ms_select_dag - start_ms_select_dag;
+		printf("TEST elapsed time in ms difference_select_dag: %d\n", difference_select_dag);
+	} else if(start_ms_add_dag != -1){
+		clock_time_t end_time_add_dag = clock_time(); // Get the system time.
+		uint16_t end_ms_add_dag = milliseconds(end_time_add_dag);
+		printf("TEST milliseconds(end_time_add_dag) : %d\n", milliseconds(end_ms_add_dag));
+		int difference_add_dag = end_ms_add_dag - start_ms_add_dag;
+		printf("TEST elapsed time in ms difference_add_dag: %d\n", difference_add_dag);
+	} else if(start_ms_join_instance != -1){
+		clock_time_t end_time_join_instance = clock_time(); // Get the system time.
+		uint16_t end_ms_join_instance = milliseconds(end_time_join_instance);
+		printf("TEST milliseconds(end_time_join_instance) : %d\n", milliseconds(end_ms_join_instance));
+		int difference_join_instance = end_ms_join_instance - start_ms_join_instance;
+		printf("TEST elapsed time in ms difference_join_instance: %d\n", difference_join_instance);
+	}
 }
 /*---------------------------------------------------------------------------*/
 static void
