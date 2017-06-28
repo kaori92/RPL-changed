@@ -247,6 +247,43 @@ node* ll_remove_any(node* head,node* nd)
 
 /*End of custom list---------------------------------------------------------------------------*/
 
+// custom class for getting time in ms
+uint16_t milliseconds( clock_time_t time )
+{
+	printf("TEST clock_time_t (int) time : %d\n", (int)time);
+
+   return (uint16_t)(time - (int) time) * 1000;
+}
+
+static void compute_length_of_reconstruction(){
+	if(start_ms_select_parent != -1){
+		clock_time_t end_time_select_parent = clock_time(); // Get the system time.
+		uint16_t end_ms_select_parent = milliseconds(end_time_select_parent);
+		printf("TEST milliseconds(end_time_select_parent) : %d\n", milliseconds(end_ms_select_parent));
+		int difference_select_parent = end_ms_select_parent - start_ms_select_parent;
+		printf("TEST elapsed time in ms difference_select_parent: %d\n", difference_select_parent);
+	} else if(start_ms_select_dag != -1){
+		clock_time_t end_time_select_dag = clock_time(); // Get the system time.
+		uint16_t end_ms_select_dag = milliseconds(end_time_select_dag);
+		printf("TEST milliseconds(end_time_select_dag) : %d\n", milliseconds(end_ms_select_dag));
+		int difference_select_dag = end_ms_select_dag - start_ms_select_dag;
+		printf("TEST elapsed time in ms difference_select_dag: %d\n", difference_select_dag);
+	} else if(start_ms_add_dag != -1){
+		clock_time_t end_time_add_dag = clock_time(); // Get the system time.
+		uint16_t end_ms_add_dag = milliseconds(end_time_add_dag);
+		printf("TEST milliseconds(end_time_add_dag) : %d\n", milliseconds(end_ms_add_dag));
+		int difference_add_dag = end_ms_add_dag - start_ms_add_dag;
+		printf("TEST elapsed time in ms difference_add_dag: %d\n", difference_add_dag);
+	} else if(start_ms_join_instance != -1){
+		clock_time_t end_time_join_instance = clock_time(); // Get the system time.
+		uint16_t end_ms_join_instance = milliseconds(end_time_join_instance);
+		printf("TEST milliseconds(end_time_join_instance) : %d\n", milliseconds(end_ms_join_instance));
+		int difference_join_instance = end_ms_join_instance - start_ms_join_instance;
+		printf("TEST elapsed time in ms difference_join_instance: %d\n", difference_join_instance);
+	}
+}
+// end of custom functions
+
 void
 rpl_dag_init(void)
 {
@@ -521,33 +558,7 @@ rpl_repair_root(uint8_t instance_id)
   return 1;
 }
 
-static void compute_length_of_reconstruction(){
-	if(start_ms_select_parent != -1){
-		clock_time_t end_time_select_parent = clock_time(); // Get the system time.
-		uint16_t end_ms_select_parent = milliseconds(end_time_select_parent);
-		printf("TEST milliseconds(end_time_select_parent) : %d\n", milliseconds(end_ms_select_parent));
-		int difference_select_parent = end_ms_select_parent - start_ms_select_parent;
-		printf("TEST elapsed time in ms difference_select_parent: %d\n", difference_select_parent);
-	} else if(start_ms_select_dag != -1){
-		clock_time_t end_time_select_dag = clock_time(); // Get the system time.
-		uint16_t end_ms_select_dag = milliseconds(end_time_select_dag);
-		printf("TEST milliseconds(end_time_select_dag) : %d\n", milliseconds(end_ms_select_dag));
-		int difference_select_dag = end_ms_select_dag - start_ms_select_dag;
-		printf("TEST elapsed time in ms difference_select_dag: %d\n", difference_select_dag);
-	} else if(start_ms_add_dag != -1){
-		clock_time_t end_time_add_dag = clock_time(); // Get the system time.
-		uint16_t end_ms_add_dag = milliseconds(end_time_add_dag);
-		printf("TEST milliseconds(end_time_add_dag) : %d\n", milliseconds(end_ms_add_dag));
-		int difference_add_dag = end_ms_add_dag - start_ms_add_dag;
-		printf("TEST elapsed time in ms difference_add_dag: %d\n", difference_add_dag);
-	} else if(start_ms_join_instance != -1){
-		clock_time_t end_time_join_instance = clock_time(); // Get the system time.
-		uint16_t end_ms_join_instance = milliseconds(end_time_join_instance);
-		printf("TEST milliseconds(end_time_join_instance) : %d\n", milliseconds(end_ms_join_instance));
-		int difference_join_instance = end_ms_join_instance - start_ms_join_instance;
-		printf("TEST elapsed time in ms difference_join_instance: %d\n", difference_join_instance);
-	}
-}
+
 /*---------------------------------------------------------------------------*/
 static void
 set_ip_from_prefix(uip_ipaddr_t *ipaddr, rpl_prefix_t *prefix)
@@ -823,18 +834,7 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
   }
 }
 
-// custom class for getting time in ms
-/*uint16_t milliseconds( time_t time )
-{
-   return (uint16_t)(time - int(time)) * 1000;
-}*/
 
-uint16_t milliseconds( clock_time_t time )
-{
-	printf("TEST clock_time_t (int) time : %d\n", (int)time);
-
-   return (uint16_t)(time - (int) time) * 1000;
-}
 
 /*---------------------------------------------------------------------------*/
 rpl_dag_t *
@@ -1397,7 +1397,7 @@ rpl_recalculate_ranks(void)
       if(!rpl_process_parent_event(p->dag->instance, p)) {
         PRINTF("RPL: A parent was dropped\n");
         // TODO2
-        //rpl_set_another_preferred_parent(p->dag);
+        rpl_set_another_preferred_parent(p->dag);
       }
     }
     p = nbr_table_next(rpl_parents, p);
@@ -1474,6 +1474,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 	PRINTF("RPL: Root received inconsistent DIO version number\n");
 	dag->version = dio->version;
 	RPL_LOLLIPOP_INCREMENT(dag->version);
+	compute_length_of_reconstruction();
 	rpl_reset_dio_timer(instance);
       } else {
         PRINTF("RPL: Global Repair\n");
