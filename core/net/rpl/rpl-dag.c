@@ -210,7 +210,40 @@ node* ll_remove_any(node* head,node* nd)
 }
 
 /*End of custom list---------------------------------------------------------------------------*/
+typedef int bool;
+#define true 1
+#define false 0
+
 rpl_parent_t *head;
+bool is_first_preferred_parent = true;
+int set_preferred_parents = 0;
+
+static rpl_parent_t *
+rpl_set_another_preferred_parent(rpl_dag_t *dag)
+{
+	//TODO
+	// find the best parent from all parents
+	rpl_parent_t *cursor;
+	rpl_parent_t *best;
+
+	cursor = head;
+	  while(cursor != NULL) {
+		  if(best == NULL){
+			  best = cursor;
+		  }
+		  else {
+			  best = best_parent_of0(cursor, best);
+			  //best = best_parent_mrhof(current, best);
+
+		  }
+		  cursor = cursor->next;
+	  }
+
+	dag->preferred_parent = best;
+	PRINTF("RPL: setting another preferred parent with rank: %d \n", best->rank);
+	return best;
+}
+/*---------------------------------------------------------------------------*/
 
 #if UIP_CONF_IPV6
 /*---------------------------------------------------------------------------*/
@@ -274,8 +307,10 @@ rpl_get_parent_ipaddr(rpl_parent_t *p)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-  if(dag != NULL && dag->preferred_parent != p) {
-    //PRINTF("RPL: rpl_set_preferred_parent ");
+  printf("TEST: wartosc pola set_preferred_parents: %d \n", set_preferred_parents);
+  if(dag != NULL && dag->preferred_parent != p && set_preferred_parents == 0) {
+    PRINTF("RPL: rpl_set_preferred_parent ");
+    set_preferred_parents = 1;
     if(p != NULL) {
       PRINT6ADDR(rpl_get_parent_ipaddr(p));
     } else {
@@ -294,6 +329,11 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     nbr_table_unlock(rpl_parents, dag->preferred_parent);
     nbr_table_lock(rpl_parents, p);
     dag->preferred_parent = p;
+  }
+  else if (set_preferred_parents == 1){
+	  rpl_set_another_preferred_parent(dag);
+  } else if (dag == NULL){
+	  set_preferred_parents = 0;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -331,32 +371,7 @@ remove_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
   }
 }
 /*---------------------------------------------------------------------------*/
-static rpl_parent_t *
-rpl_set_another_preferred_parent(rpl_dag_t *dag)
-{
-	PRINTF("RPL: setting another preferred parent\n");
-	//TODO
-	// find the best parent from all parents
-	rpl_parent_t *cursor;
-	rpl_parent_t *best;
 
-	cursor = head;
-	  while(cursor != NULL) {
-		  if(best == NULL){
-			  best = cursor;
-		  }
-		  else {
-			  best = best_parent_of0(cursor, best);
-			  //best = best_parent_mrhof(current, best);
-
-		  }
-		  cursor = cursor->next;
-	  }
-
-	dag->preferred_parent = best;
-	return best;
-}
-/*---------------------------------------------------------------------------*/
 static void
 nullify_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
 {
@@ -793,12 +808,13 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   last_parent = instance->current_dag->preferred_parent;
 
   // TODO:
-    if(last_parent == NULL){
+   /* if(last_parent == NULL){
   	  // preferred parent failed, setting to another most preferred parent
   	  // getting the next most preferred parent from all_parents
 
   	  rpl_set_another_preferred_parent(instance->current_dag);
     }
+    */
 
   best_dag = instance->current_dag;
   if(best_dag->rank != ROOT_RANK(instance)) {
@@ -911,9 +927,9 @@ rpl_select_parent(rpl_dag_t *dag)
     rpl_set_preferred_parent(dag, best);
   }
   //TODO:
-   if(dag->preferred_parent == NULL){
+   /*if(dag->preferred_parent == NULL){
    	  best = rpl_set_another_preferred_parent(dag);
-   }
+   }*/
   head = head_;
   return best;
 }
@@ -921,6 +937,7 @@ rpl_select_parent(rpl_dag_t *dag)
 void
 rpl_remove_parent(rpl_parent_t *parent)
 {
+  set_preferred_parents = 0;
   PRINTF("RPL: Removing parent ");
   PRINT6ADDR(rpl_get_parent_ipaddr(parent));
   PRINTF("\n");
@@ -938,6 +955,7 @@ rpl_nullify_parent(rpl_parent_t *parent)
      need to handle this condition in order to trigger uip_ds6_defrt_rm. */
   if(parent == dag->preferred_parent || dag->preferred_parent == NULL) {
     rpl_set_preferred_parent(dag, NULL);
+	//rpl_set_another_preferred_parent(dag);
     dag->rank = INFINITE_RANK;
     if(dag->joined) {
       if(dag->instance->def_route != NULL) {
@@ -1132,10 +1150,10 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
   rpl_set_preferred_parent(dag, p);
 
   //TODO
-    if(dag->preferred_parent == NULL){
+    /*if(dag->preferred_parent == NULL){
   	  // setting another preferred parent
   	  rpl_set_another_preferred_parent(dag);
-    }
+    }*/
 
   instance->of->update_metric_container(instance);
   dag->rank = instance->of->calculate_rank(p, 0);
@@ -1230,9 +1248,9 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 
   rpl_set_preferred_parent(dag, p);
   //TODO
-  if(dag->preferred_parent == NULL){
+  /*if(dag->preferred_parent == NULL){
   	rpl_set_another_preferred_parent(dag);
-  }
+  }*/
 
   dag->rank = instance->of->calculate_rank(p, 0);
   dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */
