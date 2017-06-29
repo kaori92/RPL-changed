@@ -39,6 +39,9 @@
  *
  * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
  */
+#ifndef       CLOCKS_PER_SEC
+#define       CLOCKS_PER_SEC  1000000L
+#endif        /* CLOCKS_PER_SEC */
 
 
 #include "contiki.h"
@@ -48,14 +51,49 @@
 #include "net/nbr-table.h"
 #include "lib/list.h"
 #include "lib/memb.h"
-#include "sys/ctimer.h"
-
+#include <time.h>
+#include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <stdlib.h>
+#include <math.h>
+#include "sys/timer.h"
+#define DEBUG DEBUG_NONE
 
-#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
+uint16_t start_ms_select_parent = -1;
+uint16_t start_ms_select_dag = -1;
+uint16_t start_ms_add_dag = -1;
+uint16_t start_ms_join_instance = -1;
+uint16_t start_ms_rpl_remove_parent = -1;
+
+
+rpl_parent_t *head;
+
+#if UIP_CONF_IPV6
+/*---------------------------------------------------------------------------*/
+extern rpl_of_t RPL_OF;
+static rpl_of_t * const objective_functions[] = {&RPL_OF};
+
+/*---------------------------------------------------------------------------*/
+/* RPL definitions. */
+
+#ifndef RPL_CONF_GROUNDED
+#define RPL_GROUNDED                    0
+#else
+#define RPL_GROUNDED                    RPL_CONF_GROUNDED
+#endif /* !RPL_CONF_GROUNDED */
+/* Maintain a list of all parents. */
+//LIST_STRUCT(all_parents);
+/*---------------------------------------------------------------------------*/
+/* Per-parent RPL information */
+NBR_TABLE(rpl_parent_t, rpl_parents);
+/*---------------------------------------------------------------------------*/
+/* Allocate instance table. */
+rpl_instance_t instance_table[RPL_MAX_INSTANCES];
+rpl_instance_t *default_instance;
+/*---------------------------------------------------------------------------*/
 /* custom LIST ---------------------------------------------------------------------------*/
  struct node {
 	rpl_parent_t* data;
@@ -210,6 +248,7 @@ node* ll_remove_any(node* head,node* nd)
 }
 
 /*End of custom list---------------------------------------------------------------------------*/
+
 typedef int bool;
 #define true 1
 #define false 0
@@ -217,6 +256,42 @@ typedef int bool;
 rpl_parent_t *head;
 bool is_first_preferred_parent = true;
 int set_preferred_parents = 0;
+
+// custom class for getting time in ms
+uint16_t milliseconds( clock_time_t time )
+{
+	printf("TIME clock_time_t (int) time : %d\n", (int)time);
+
+   return (uint16_t)(time - (int) time) * 1000;
+}
+
+static void compute_length_of_reconstruction(){
+	if(start_ms_select_parent != -1){
+		clock_time_t end_time_select_parent = clock_time(); // Get the system time.
+		uint16_t end_ms_select_parent = milliseconds(end_time_select_parent);
+		printf("TIME milliseconds(end_time_select_parent) : %d\n", milliseconds(end_ms_select_parent));
+		int difference_select_parent = end_ms_select_parent - start_ms_select_parent;
+		printf("TIME elapsed time in ms difference_select_parent: %d\n", difference_select_parent);
+	} else if(start_ms_select_dag != -1){
+		clock_time_t end_time_select_dag = clock_time(); // Get the system time.
+		uint16_t end_ms_select_dag = milliseconds(end_time_select_dag);
+		printf("TIME milliseconds(end_time_select_dag) : %d\n", milliseconds(end_ms_select_dag));
+		int difference_select_dag = end_ms_select_dag - start_ms_select_dag;
+		printf("TIME elapsed time in ms difference_select_dag: %d\n", difference_select_dag);
+	} else if(start_ms_add_dag != -1){
+		clock_time_t end_time_add_dag = clock_time(); // Get the system time.
+		uint16_t end_ms_add_dag = milliseconds(end_time_add_dag);
+		printf("TIME milliseconds(end_time_add_dag) : %d\n", milliseconds(end_ms_add_dag));
+		int difference_add_dag = end_ms_add_dag - start_ms_add_dag;
+		printf("TIME elapsed time in ms difference_add_dag: %d\n", difference_add_dag);
+	} else if(start_ms_join_instance != -1){
+		clock_time_t end_time_join_instance = clock_time(); // Get the system time.
+		uint16_t end_ms_join_instance = milliseconds(end_time_join_instance);
+		printf("TIME milliseconds(end_time_join_instance) : %d\n", milliseconds(end_ms_join_instance));
+		int difference_join_instance = end_ms_join_instance - start_ms_join_instance;
+		printf("TIME elapsed time in ms difference_join_instance: %d\n", difference_join_instance);
+	}
+}
 
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
@@ -245,29 +320,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 }
 /*---------------------------------------------------------------------------*/
 
-#if UIP_CONF_IPV6
-/*---------------------------------------------------------------------------*/
-extern rpl_of_t RPL_OF;
-static rpl_of_t * const objective_functions[] = {&RPL_OF};
 
-/*---------------------------------------------------------------------------*/
-/* RPL definitions. */
-
-#ifndef RPL_CONF_GROUNDED
-#define RPL_GROUNDED                    0
-#else
-#define RPL_GROUNDED                    RPL_CONF_GROUNDED
-#endif /* !RPL_CONF_GROUNDED */
-/* Maintain a list of all parents. */
-//LIST_STRUCT(all_parents);
-/*---------------------------------------------------------------------------*/
-/* Per-parent RPL information */
-NBR_TABLE(rpl_parent_t, rpl_parents);
-/*---------------------------------------------------------------------------*/
-/* Allocate instance table. */
-rpl_instance_t instance_table[RPL_MAX_INSTANCES];
-rpl_instance_t *default_instance;
-/*---------------------------------------------------------------------------*/
 void
 rpl_dag_init(void)
 {
@@ -331,8 +384,10 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     dag->preferred_parent = p;
   }
   else if (set_preferred_parents == 1){
+	  //compute_length_of_reconstruction();
 	  rpl_set_another_preferred_parent(dag);
   } else if (dag == NULL){
+	  compute_length_of_reconstruction();
 	  set_preferred_parents = 0;
   }
 }
@@ -517,11 +572,13 @@ rpl_repair_root(uint8_t instance_id)
   }
 
   RPL_LOLLIPOP_INCREMENT(instance->current_dag->version);
+  compute_length_of_reconstruction();
   RPL_LOLLIPOP_INCREMENT(instance->dtsn_out);
   PRINTF("RPL: rpl_repair_root initiating global repair with version %d\n", instance->current_dag->version);
   rpl_reset_dio_timer(instance);
   return 1;
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 set_ip_from_prefix(uip_ipaddr_t *ipaddr, rpl_prefix_t *prefix)
@@ -796,6 +853,7 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
     return NULL;
   }
 }
+
 /*---------------------------------------------------------------------------*/
 rpl_dag_t *
 rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
@@ -810,9 +868,15 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   // TODO:
    /* if(last_parent == NULL){
   	  // preferred parent failed, setting to another most preferred parent
-  	  // getting the next most preferred parent from all_parents
+    	clock_time_t start_time = clock_time(); // Get the system time.
+    	  //printf("TEST start_time : %d\n", start_time);
+    	  start_ms_select_dag = milliseconds(start_time);
+    	  printf("TEST milliseconds(start_ms_select_dag) : %d\n", milliseconds(start_ms_select_dag));
+    	  // lengthy operation
+      	  // getting the next most preferred parent from all_parents
+    	  rpl_set_another_preferred_parent(instance->current_dag);
 
-  	  rpl_set_another_preferred_parent(instance->current_dag);
+  	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
     }
     */
 
@@ -822,8 +886,10 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
       if(p->dag != best_dag) {
         best_dag = instance->of->best_dag(best_dag, p->dag);
       }
+
     } else if(p->dag == best_dag) {
       best_dag = NULL;
+
       for(dag = &instance->dag_table[0], end = dag + RPL_MAX_DAG_PER_INSTANCE; dag < end; ++dag) {
         if(dag->used && dag->preferred_parent != NULL && dag->preferred_parent->rank != INFINITE_RANK) {
           if(best_dag == NULL) {
@@ -928,7 +994,13 @@ rpl_select_parent(rpl_dag_t *dag)
   }
   //TODO:
    /*if(dag->preferred_parent == NULL){
-   	  best = rpl_set_another_preferred_parent(dag);
+	   // preferred parent failed, setting to another most preferred parent
+	      	clock_time_t start_time_select_parent = clock_time(); // Get the system time.
+	      	  //printf("TEST start_time : %d\n", start_time);
+	      	  start_ms_select_parent = milliseconds(start_time_select_parent);
+	      	  printf("TEST milliseconds(start_select_parent) : %d\n", milliseconds(start_time_select_parent));
+	      	  // getting the next most preferred parent from all_parents
+	       	  best = rpl_set_another_preferred_parent(dag);
    }*/
   head = head_;
   return best;
@@ -945,6 +1017,13 @@ rpl_remove_parent(rpl_parent_t *parent)
   rpl_nullify_parent(parent);
 
   nbr_table_remove(rpl_parents, parent);
+  // preferred parent failed, setting to another most preferred parent
+  	      	clock_time_t start_time_rpl_remove_parent = clock_time(); // Get the system time.
+  	      	  //printf("TEST start_time : %d\n", start_time);
+  	      start_ms_rpl_remove_parent = milliseconds(start_time_rpl_remove_parent); //abc
+  	      	  printf("TIME milliseconds(start_select_parent) : %d\n", milliseconds(start_time_rpl_remove_parent));
+  	      	  // getting the next most preferred parent from all_parents
+  	       	  //rpl_set_another_preferred_parent(parent->dag);
 }
 /*---------------------------------------------------------------------------*/
 void
@@ -1151,9 +1230,15 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
 
   //TODO
     /*if(dag->preferred_parent == NULL){
-  	  // setting another preferred parent
-  	  rpl_set_another_preferred_parent(dag);
+    	  // preferred parent failed, setting to another most preferred parent
+      	  clock_time_t start_time = clock_time(); // Get the system time.
+      	  //printf("TEST start_time : %d\n", start_time);
+      	  start_ms_join_instance = milliseconds(start_time);
+      	  printf("TEST milliseconds(start_ms_join_instance) : %d\n", milliseconds(start_ms_join_instance));
+      	  // getting the next most preferred parent from all_parents
+      	  rpl_set_another_preferred_parent(dag);
     }*/
+
 
   instance->of->update_metric_container(instance);
   dag->rank = instance->of->calculate_rank(p, 0);
@@ -1249,7 +1334,13 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
   rpl_set_preferred_parent(dag, p);
   //TODO
   /*if(dag->preferred_parent == NULL){
-  	rpl_set_another_preferred_parent(dag);
+	  // preferred parent failed, setting to another most preferred parent
+	  clock_time_t start_time = clock_time(); // Get the system time.
+	  //printf("TEST start_time : %d\n", start_time);
+	  start_ms_add_dag = milliseconds(start_time);
+	  printf("TEST milliseconds(start_ms_add_dag) : %d\n", milliseconds(start_ms_add_dag));
+	  // getting the next most preferred parent from all_parents
+	  rpl_set_another_preferred_parent(dag);
   }*/
 
   dag->rank = instance->of->calculate_rank(p, 0);
