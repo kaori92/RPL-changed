@@ -58,7 +58,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sys/timer.h"
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 
 #include "net/uip-debug.h"
 
@@ -384,7 +384,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     dag->preferred_parent = p;
   }
   else if (set_preferred_parents == 1){
-	  //compute_length_of_reconstruction();
+	  compute_length_of_reconstruction();
 	  rpl_set_another_preferred_parent(dag);
   } else if (dag == NULL){
 	  compute_length_of_reconstruction();
