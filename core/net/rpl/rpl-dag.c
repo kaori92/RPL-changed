@@ -58,7 +58,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sys/timer.h"
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 
 #include "net/uip-debug.h"
 
