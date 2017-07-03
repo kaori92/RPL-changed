@@ -109,7 +109,7 @@ rpl_instance_t *default_instance;
 node* ll_create(rpl_parent_t* data,node* next)
 {
     node* new_node;
-	struct mmem mmem_structure = {NULL, 100, new_node};
+	struct mmem mmem_structure = {NULL, sizeof(node), new_node};
     int result_mmem_alloc = mmem_alloc(mmem_structure, sizeof(node));
     if(result_mmem_alloc != 1)
     {
