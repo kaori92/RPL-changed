@@ -34,6 +34,7 @@
 #include "net/uip-ds6.h"
 #include "net/uip-udp-packet.h"
 #include "sys/ctimer.h"
+#include "net/uip-ds6-route.h"
 #include "powertrace.h"
 /*#ifdef WITH_COMPOWER
 #include "powertrace.h"
@@ -46,7 +47,7 @@
 
 #define UDP_EXAMPLE_ID  190
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #ifndef PERIOD
@@ -60,6 +61,7 @@
 
 static struct uip_udp_conn *client_conn;
 static uip_ipaddr_t server_ipaddr;
+uip_ipaddr_t global_ip_address;
 //int packets_received;
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -112,8 +114,20 @@ print_local_addresses(void)
     }
   }
 }
+/* */
+static void register_callback(void
+	(*uip_ds6_notification_add)(struct uip_ds6_notification *, uip_ds6_notification_callback)){
+
+	uip_ds6_notification_callback callback1 = {0, server_ipaddr, global_ip_address};
+
+	struct uip_ds6_notification* notification = {NULL, callback1};
+	uip_ds6_notification_callback callback = {0, global_ip_address, server_ipaddr};
+
+	uip_ds6_notification_add(notification, callback);
+	printf("A route has been added: uip_ds6_notification_add \n");
+}
 /*---------------------------------------------------------------------------*/
-static void
+static uip_ipaddr_t
 set_global_address(void)
 {
   uip_ipaddr_t ipaddr;
@@ -143,6 +157,7 @@ set_global_address(void)
 /* Mode 3 - derived from server link-local (MAC) address */
   uip_ip6addr(&server_ipaddr, 0xaaaa, 0, 0, 0, 0x0250, 0xc2ff, 0xfea8, 0xcd1a); //redbee-econotag
 #endif
+  return ipaddr;
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
@@ -157,11 +172,12 @@ PROCESS_THREAD(udp_client_process, ev, data)
   //powertrace_start(CLOCK_SECOND * 2);
   PROCESS_PAUSE();
   //powertrace_print("POWERTRACE: ");
-  set_global_address();
+  global_ip_address = set_global_address();
   
   PRINTF("UDP client process started\n");
 
   print_local_addresses();
+  register_callback(uip_ds6_notification_add);
 
   /* new connection with remote host */
   client_conn = udp_new(NULL, UIP_HTONS(UDP_SERVER_PORT), NULL); 
