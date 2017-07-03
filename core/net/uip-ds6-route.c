@@ -67,7 +67,7 @@ LIST(notificationlist);
 static int num_routes = 0;
 
 #undef DEBUG
-#define DEBUG DEBUG_ANNOTATE
+#define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
 static void rm_routelist_callback(nbr_table_item_t *ptr);
@@ -341,7 +341,7 @@ uip_ds6_route_add(uip_ipaddr_t *ipaddr, uint8_t length,
   PRINTF(" via ");
   PRINT6ADDR(nexthop);
   PRINTF("\n");
-  ANNOTATE("#L %u 1;blue\n", nexthop->u8[sizeof(uip_ipaddr_t) - 1]);
+  //ANNOTATE("#L %u 1;blue\n", nexthop->u8[sizeof(uip_ipaddr_t) - 1]);
 
 #if UIP_DS6_NOTIFICATIONS
   call_route_callback(UIP_DS6_NOTIFICATION_ROUTE_ADD, ipaddr, nexthop);
@@ -400,7 +400,7 @@ uip_ds6_route_rm(uip_ds6_route_t *route)
         return;
       }
     }
-    ANNOTATE("#L %u 0\n", uip_ds6_route_nexthop(route)->u8[sizeof(uip_ipaddr_t) - 1]);
+    //ANNOTATE("#L %u 0\n", uip_ds6_route_nexthop(route)->u8[sizeof(uip_ipaddr_t) - 1]);
 #endif
   }
 
@@ -485,7 +485,7 @@ uip_ds6_defrt_add(uip_ipaddr_t *ipaddr, unsigned long interval)
     d->isinfinite = 1;
   }
 
-  ANNOTATE("#L %u 1\n", ipaddr->u8[sizeof(uip_ipaddr_t) - 1]);
+  //ANNOTATE("#L %u 1\n", ipaddr->u8[sizeof(uip_ipaddr_t) - 1]);
 
 #if UIP_DS6_NOTIFICATIONS
   call_route_callback(UIP_DS6_NOTIFICATION_DEFRT_ADD, ipaddr, ipaddr);
@@ -515,7 +515,7 @@ uip_ds6_defrt_rm(uip_ds6_defrt_t *defrt)
       PRINTF("Removing default route\n");
       list_remove(defaultrouterlist, defrt);
       memb_free(&defaultroutermemb, defrt);
-      ANNOTATE("#L %u 0\n", defrt->ipaddr.u8[sizeof(uip_ipaddr_t) - 1]);
+      //ANNOTATE("#L %u 0\n", defrt->ipaddr.u8[sizeof(uip_ipaddr_t) - 1]);
 #if UIP_DS6_NOTIFICATIONS
       call_route_callback(UIP_DS6_NOTIFICATION_DEFRT_RM,
 			  &defrt->ipaddr, &defrt->ipaddr);

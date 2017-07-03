@@ -72,6 +72,7 @@ uint16_t start_ms_rpl_remove_parent = -1;
 
 
 rpl_parent_t *head;
+struct mmem mmem_structure;
 
 #if UIP_CONF_IPV6
 /*---------------------------------------------------------------------------*/
@@ -107,8 +108,10 @@ rpl_instance_t *default_instance;
 
 node* ll_create(rpl_parent_t* data,node* next)
 {
-    node* new_node = (node*)malloc(sizeof(node));
-    if(new_node == NULL)
+    node* new_node;
+	struct mmem mmem_structure = {NULL, 100, new_node};
+    int result_mmem_alloc = mmem_alloc(mmem_structure, sizeof(node));
+    if(result_mmem_alloc != 1)
     {
         printf("Error creating a new node.\n");
         exit(0);
@@ -123,7 +126,6 @@ node* ll_prepend(node* head,rpl_parent_t* data)
 {
     node* new_node = ll_create(data,head);
     head = new_node;
-    //free(new_node);
     return head;
 }
 
@@ -974,6 +976,7 @@ rpl_select_parent(rpl_dag_t *dag)
   node* head_ = NULL;
   p = nbr_table_head(rpl_parents);
   typedef void (*callback)(node* data);
+  mmem_init();
   while(p != NULL) {
 	  //list_add(all_parents, p);
 
