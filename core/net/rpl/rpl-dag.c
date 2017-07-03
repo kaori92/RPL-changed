@@ -58,6 +58,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sys/timer.h"
+#include "lib/mmem.h"
+//#include <malloc.h>
 #define DEBUG DEBUG_NONE
 
 #include "net/uip-debug.h"
