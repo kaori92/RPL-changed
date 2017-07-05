@@ -58,7 +58,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sys/timer.h"
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 
 #include "net/uip-debug.h"
 
@@ -360,9 +360,10 @@ rpl_get_parent_ipaddr(rpl_parent_t *p)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-  printf("TEST: wartosc pola set_preferred_parents: %d \n", set_preferred_parents);
-  if(dag != NULL && dag->preferred_parent != p && set_preferred_parents == 0) {
-    PRINTF("RPL: rpl_set_preferred_parent ");
+  //printf("TEST: wartosc pola set_preferred_parents: %d \n", set_preferred_parents);
+  //if(dag != NULL && dag->preferred_parent != p && set_preferred_parents == 0) {
+	if(dag != NULL && dag->preferred_parent != p) {
+    //PRINTF("RPL: rpl_set_preferred_parent ");
     set_preferred_parents = 1;
     if(p != NULL) {
       PRINT6ADDR(rpl_get_parent_ipaddr(p));
@@ -383,13 +384,13 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     nbr_table_lock(rpl_parents, p);
     dag->preferred_parent = p;
   }
-  else if (set_preferred_parents == 1){
+  /*else if (set_preferred_parents == 1){
 	  compute_length_of_reconstruction();
 	  rpl_set_another_preferred_parent(dag);
   } else if (dag == NULL){
 	  compute_length_of_reconstruction();
 	  set_preferred_parents = 0;
-  }
+  }*/
 }
 /*---------------------------------------------------------------------------*/
 /* Greater-than function for the lollipop counter.                      */
