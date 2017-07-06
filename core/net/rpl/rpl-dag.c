@@ -315,6 +315,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 	  }
 
 	dag->preferred_parent = best;
+	compute_length_of_reconstruction();
 	PRINTF("RPL: setting another preferred parent with rank: %d \n", best->rank);
 	return best;
 }
@@ -381,6 +382,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
     nbr_table_unlock(rpl_parents, dag->preferred_parent);
     nbr_table_lock(rpl_parents, p);
     dag->preferred_parent = p;
+    compute_length_of_reconstruction();
   }
   else if (set_preferred_parents == 1){
 
@@ -933,7 +935,6 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   } else if(!acceptable_rank(best_dag, best_dag->rank)) {
     PRINTF("RPL: New rank unacceptable!\n");
     rpl_set_preferred_parent(instance->current_dag, NULL);
-
 	  // preferred parent failed, setting to another most preferred parent
   	clock_time_t start_time = clock_time(); // Get the system time.
   	  //printf("TEST start_time : %d\n", start_time);
@@ -1004,10 +1005,7 @@ rpl_select_parent(rpl_dag_t *dag)
     rpl_set_preferred_parent(dag, best);
   }
 
-	clock_time_t start_time_select_parent = clock_time(); // Get the system time.
-	//printf("TEST start_time : %d\n", start_time);
-	start_ms_select_parent = milliseconds(start_time_select_parent);
-	printf("TEST milliseconds(start_select_parent) : %d\n", milliseconds(start_time_select_parent));
+  compute_length_of_reconstruction();
 
   head = head_;
   return best;
