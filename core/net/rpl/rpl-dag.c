@@ -945,7 +945,7 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
   	  rpl_set_another_preferred_parent(instance->current_dag);
 
 	  // checking if this child has a preferred parent and (the preferred parent has a preferred parent or the preferred parent is a root)
-  }
+
     if(instance->mop != RPL_MOP_NO_DOWNWARD_ROUTES && last_parent != NULL) {
       /* Send a No-Path DAO to the removed preferred parent. */
       dao_output(last_parent, RPL_ZERO_LIFETIME);
@@ -1333,4 +1333,308 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 
   memcpy(&dag->dag_id, &dio->dag_id, sizeof(dio->dag_id));
 
-  /* copy prefix information into th
+  /* copy prefix information into the dag */
+    memcpy(&dag->prefix_info, &dio->prefix_info, sizeof(rpl_prefix_t));
+
+    rpl_set_preferred_parent(dag, p);
+    //TODO
+    /*if(dag->preferred_parent == NULL){
+  	  // preferred parent failed, setting to another most preferred parent
+  	  clock_time_t start_time = clock_time(); // Get the system time.
+  	  //printf("TEST start_time : %d\n", start_time);
+  	  start_ms_add_dag = milliseconds(start_time);
+  	  printf("TEST milliseconds(start_ms_add_dag) : %d\n", milliseconds(start_ms_add_dag));
+  	  // getting the next most preferred parent from all_parents
+  	  rpl_set_another_preferred_parent(dag);
+    }*/
+
+    dag->rank = instance->of->calculate_rank(p, 0);
+    dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */
+
+    PRINTF("RPL: Joined DAG with instance ID %u, rank %hu, DAG ID ",
+           dio->instance_id, dag->rank);
+    PRINT6ADDR(&dag->dag_id);
+    PRINTF("\n");
+
+    ANNOTATE("#A join=%u\n", dag->dag_id.u8[sizeof(dag->dag_id) - 1]);
+
+    rpl_process_parent_event(instance, p);
+    p->dtsn = dio->dtsn;
+  }
+
+  /*---------------------------------------------------------------------------*/
+  static void
+  global_repair(uip_ipaddr_t *from, rpl_dag_t *dag, rpl_dio_t *dio)
+  {
+    rpl_parent_t *p;
+
+    remove_parents(dag, 0);
+    dag->version = dio->version;
+    dag->instance->of->reset(dag);
+    dag->min_rank = INFINITE_RANK;
+    RPL_LOLLIPOP_INCREMENT(dag->instance->dtsn_out);
+
+    p = rpl_add_parent(dag, dio, from);
+    if(p == NULL) {
+      PRINTF("RPL: Failed to add a parent during the global repair\n");
+      dag->rank = INFINITE_RANK;
+    } else {
+      dag->rank = dag->instance->of->calculate_rank(p, 0);
+      dag->min_rank = dag->rank;
+      PRINTF("RPL: rpl_process_parent_event global repair\n");
+      rpl_process_parent_event(dag->instance, p);
+    }
+
+    PRINTF("RPL: Participating in a global repair (version=%u, rank=%hu)\n",
+           dag->version, dag->rank);
+
+    RPL_STAT(rpl_stats.global_repairs++);
+  }
+  /*---------------------------------------------------------------------------*/
+  void
+  rpl_local_repair(rpl_instance_t *instance)
+  {
+    int i;
+
+    if(instance == NULL) {
+      PRINTF("RPL: local repair requested for instance NULL\n");
+      return;
+    }
+    PRINTF("RPL: Starting a local instance repair\n");
+    for(i = 0; i < RPL_MAX_DAG_PER_INSTANCE; i++) {
+      if(instance->dag_table[i].used) {
+        instance->dag_table[i].rank = INFINITE_RANK;
+        nullify_parents(&instance->dag_table[i], 0);
+      }
+    }
+
+    rpl_reset_dio_timer(instance);
+
+    RPL_STAT(rpl_stats.local_repairs++);
+  }
+  /*---------------------------------------------------------------------------*/
+  void
+  rpl_recalculate_ranks(void)
+  {
+    rpl_parent_t *p;
+
+    /*
+     * We recalculate ranks when we receive feedback from the system rather
+     * than RPL protocol messages. This periodical recalculation is called
+     * from a timer in order to keep the stack depth reasonably low.
+     */
+    p = nbr_table_head(rpl_parents);
+    while(p != NULL) {
+      if(p->dag != NULL && p->dag->instance && p->updated) {
+        p->updated = 0;
+        PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
+        if(!rpl_process_parent_event(p->dag->instance, p)) {
+          PRINTF("RPL: A parent was dropped\n");
+          // TODO2
+          //rpl_set_another_preferred_parent(p->dag);
+        }
+      }
+      p = nbr_table_next(rpl_parents, p);
+    }
+  }
+  /*---------------------------------------------------------------------------*/
+  int
+  rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
+  {
+    int return_value;
+
+  #if DEBUG
+    rpl_rank_t old_rank;
+    old_rank = instance->current_dag->rank;
+  #endif /* DEBUG */
+
+    return_value = 1;
+
+    if(!acceptable_rank(p->dag, p->rank)) {
+      /* The candidate parent is no longer valid: the rank increase resulting
+         from the choice of it as a parent would be too high. */
+      PRINTF("RPL: Unacceptable rank %u\n", (unsigned)p->rank);
+      rpl_nullify_parent(p);
+      if(p != instance->current_dag->preferred_parent) {
+        return 0;
+      } else {
+        return_value = 0;
+      }
+    }
+
+    if(rpl_select_dag(instance, p) == NULL) {
+      /* No suitable parent; trigger a local repair. */
+      PRINTF("RPL: No parents found in any DAG\n");
+      rpl_local_repair(instance);
+      return 0;
+    }
+
+  #if DEBUG
+    if(DAG_RANK(old_rank, instance) != DAG_RANK(instance->current_dag->rank, instance)) {
+      PRINTF("RPL: Moving in the instance from rank %hu to %hu\n",
+  	   DAG_RANK(old_rank, instance), DAG_RANK(instance->current_dag->rank, instance));
+      if(instance->current_dag->rank != INFINITE_RANK) {
+        PRINTF("RPL: The preferred parent is ");
+        PRINT6ADDR(rpl_get_parent_ipaddr(instance->current_dag->preferred_parent));
+        PRINTF(" (rank %u)\n",
+             (unsigned)DAG_RANK(instance->current_dag->preferred_parent->rank, instance));
+      } else {
+        PRINTF("RPL: We don't have any parent");
+      }
+    }
+  #endif /* DEBUG */
+
+    return return_value;
+  }
+  /*---------------------------------------------------------------------------*/
+  void
+  rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
+  {
+    rpl_instance_t *instance;
+    rpl_dag_t *dag, *previous_dag;
+    rpl_parent_t *p;
+
+    if(dio->mop != RPL_MOP_DEFAULT) {
+      PRINTF("RPL: Ignoring a DIO with an unsupported MOP: %d\n", dio->mop);
+      return;
+    }
+
+    dag = get_dag(dio->instance_id, &dio->dag_id);
+    instance = rpl_get_instance(dio->instance_id);
+
+    if(dag != NULL && instance != NULL) {
+      if(lollipop_greater_than(dio->version, dag->version)) {
+        if(dag->rank == ROOT_RANK(instance)) {
+  	PRINTF("RPL: Root received inconsistent DIO version number\n");
+  	dag->version = dio->version;
+  	RPL_LOLLIPOP_INCREMENT(dag->version);
+  	rpl_reset_dio_timer(instance);
+        } else {
+          PRINTF("RPL: Global Repair\n");
+          if(dio->prefix_info.length != 0) {
+            if(dio->prefix_info.flags & UIP_ND6_RA_FLAG_AUTONOMOUS) {
+              PRINTF("RPL : Prefix announced in DIO\n");
+              rpl_set_prefix(dag, &dio->prefix_info.prefix, dio->prefix_info.length);
+            }
+          }
+  	global_repair(from, dag, dio);
+        }
+        return;
+      }
+
+      if(lollipop_greater_than(dag->version, dio->version)) {
+        /* The DIO sender is on an older version of the DAG. */
+        PRINTF("RPL: old version received => inconsistency detected\n");
+        if(dag->joined) {
+          rpl_reset_dio_timer(instance);
+          return;
+        }
+      }
+    }
+
+    if(instance == NULL) {
+      PRINTF("RPL: New instance detected: Joining...\n");
+      rpl_join_instance(from, dio);
+      return;
+    }
+
+    if(dag == NULL) {
+      PRINTF("RPL: Adding new DAG to known instance.\n");
+      rpl_add_dag(from, dio);
+      return;
+    }
+
+
+    if(dio->rank < ROOT_RANK(instance)) {
+      PRINTF("RPL: Ignoring DIO with too low rank: %u\n",
+             (unsigned)dio->rank);
+      return;
+    } else if(dio->rank == INFINITE_RANK && dag->joined) {
+      rpl_reset_dio_timer(instance);
+    }
+
+    /* Prefix Information Option treated to add new prefix */
+    if(dio->prefix_info.length != 0) {
+      if(dio->prefix_info.flags & UIP_ND6_RA_FLAG_AUTONOMOUS) {
+        PRINTF("RPL : Prefix announced in DIO\n");
+        rpl_set_prefix(dag, &dio->prefix_info.prefix, dio->prefix_info.length);
+      }
+    }
+
+    if(dag->rank == ROOT_RANK(instance)) {
+      if(dio->rank != INFINITE_RANK) {
+        instance->dio_counter++;
+      }
+      return;
+    }
+
+    /*
+     * At this point, we know that this DIO pertains to a DAG that
+     * we are already part of. We consider the sender of the DIO to be
+     * a candidate parent, and let rpl_process_parent_event decide
+     * whether to keep it in the set.
+     */
+
+    p = rpl_find_parent(dag, from);
+    if(p == NULL) {
+      previous_dag = find_parent_dag(instance, from);
+      if(previous_dag == NULL) {
+        /* Add the DIO sender as a candidate parent. */
+        p = rpl_add_parent(dag, dio, from);
+        if(p == NULL) {
+          PRINTF("RPL: Failed to add a new parent (");
+          PRINT6ADDR(from);
+          PRINTF(")\n");
+          return;
+        }
+        PRINTF("RPL: New candidate parent with rank %u: ", (unsigned)p->rank);
+        PRINT6ADDR(from);
+        PRINTF("\n");
+      } else {
+        p = rpl_find_parent(previous_dag, from);
+        if(p != NULL) {
+          rpl_move_parent(previous_dag, dag, p);
+        }
+      }
+    } else {
+      if(p->rank == dio->rank) {
+        PRINTF("RPL: Received consistent DIO\n");
+        if(dag->joined) {
+          instance->dio_counter++;
+        }
+      } else {
+        p->rank=dio->rank;
+      }
+    }
+
+    PRINTF("RPL: preferred DAG ");
+    PRINT6ADDR(&instance->current_dag->dag_id);
+    PRINTF(", rank %u, min_rank %u, ",
+  	 instance->current_dag->rank, instance->current_dag->min_rank);
+    PRINTF("parent rank %u, parent etx %u, link metric %u, instance etx %u\n",
+  	 p->rank, -1/*p->mc.obj.etx*/, p->link_metric, instance->mc.obj.etx);
+
+    /* We have allocated a candidate parent; process the DIO further. */
+
+  #if RPL_DAG_MC != RPL_DAG_MC_NONE
+    memcpy(&p->mc, &dio->mc, sizeof(p->mc));
+  #endif /* RPL_DAG_MC != RPL_DAG_MC_NONE */
+    if(rpl_process_parent_event(instance, p) == 0) {
+      PRINTF("RPL: The candidate parent is rejected\n");
+      return;
+    }
+
+    /* We don't use route control, so we can have only one official parent. */
+    if(dag->joined && p == dag->preferred_parent) {
+      if(should_send_dao(instance, dio, p)) {
+        RPL_LOLLIPOP_INCREMENT(instance->dtsn_out);
+        rpl_schedule_dao(instance);
+      }
+      /* We received a new DIO from our preferred parent.
+       * Call uip_ds6_defrt_add to set a fresh value for the lifetime counter */
+      uip_ds6_defrt_add(from, RPL_LIFETIME(instance, instance->default_lifetime));
+    }
+    p->dtsn = dio->dtsn;
+  }
+  /*---------------------------------------------------------------------------*/
+  #endif /* UIP_CONF_IPV6 */
