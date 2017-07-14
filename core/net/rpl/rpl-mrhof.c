@@ -83,7 +83,6 @@ rpl_of_t rpl_mrhof = {
  */
 #define PARENT_SWITCH_THRESHOLD_DIV	2
 
-typedef uint16_t rpl_path_metric_t;
 
 static rpl_path_metric_t
 calculate_path_metric(rpl_parent_t *p)
