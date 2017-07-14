@@ -354,35 +354,38 @@ rpl_get_parent_ipaddr(rpl_parent_t *p)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-	printf("TEST: wartosc pola set_preferred_parents na poczatku funkcji rpl_set_preferred_parent: %d \n", set_preferred_parents);
-	if(dag != NULL && dag->preferred_parent != p && set_preferred_parents == 0) {
-		set_preferred_parents = 1;
-		if(p != NULL) {
-			PRINT6ADDR(rpl_get_parent_ipaddr(p));
-		} else {
-			//PRINTF("NULL");
-		}
-		//PRINTF(" used to be ");
-		if(dag->preferred_parent != NULL) {
-			PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
-		} else {
-			//PRINTF("NULL");
-		}
-		//PRINTF("\n");
 
-		/* Always keep the preferred parent locked, so it remains in the
-		 * neighbor table. */
-		nbr_table_unlock(rpl_parents, dag->preferred_parent);
-		nbr_table_lock(rpl_parents, p);
-		dag->preferred_parent = p;
-	}
-	else if (set_preferred_parents >= 1)
-	{
-		rpl_set_another_preferred_parent(dag);
-	}
-	else if (dag == NULL) {
-		set_preferred_parents = 0;
-	}
+  //printf("TEST: wartosc pola set_preferred_parents: %d \n", set_preferred_parents);
+  //if(dag != NULL && dag->preferred_parent != p && set_preferred_parents == 0) {
+	if(dag != NULL && dag->preferred_parent != p) {
+    //PRINTF("RPL: rpl_set_preferred_parent ");
+    set_preferred_parents = 1;
+    if(p != NULL) {
+      PRINT6ADDR(rpl_get_parent_ipaddr(p));
+    } else {
+      //PRINTF("NULL");
+    }
+    //PRINTF(" used to be ");
+    if(dag->preferred_parent != NULL) {
+      PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
+    } else {
+      //PRINTF("NULL");
+    }
+    //PRINTF("\n");
+
+    /* Always keep the preferred parent locked, so it remains in the
+     * neighbor table. */
+    nbr_table_unlock(rpl_parents, dag->preferred_parent);
+    nbr_table_lock(rpl_parents, p);
+    dag->preferred_parent = p;
+  }
+  /*else if (set_preferred_parents == 1){
+	  compute_length_of_reconstruction();
+	  rpl_set_another_preferred_parent(dag);
+  } else if (dag == NULL){
+	  compute_length_of_reconstruction();
+	  set_preferred_parents = 0;
+  }*/
 }
 /*---------------------------------------------------------------------------*/
 /* Greater-than function for the lollipop counter.                      */
