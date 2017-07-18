@@ -245,6 +245,7 @@ static rpl_of_t * const objective_functions[] = {&RPL_OF};
 /*---------------------------------------------------------------------------*/
 /* Per-parent RPL information */
 NBR_TABLE(rpl_parent_t, rpl_parents);
+NBR_TABLE(rpl_parent_t, all_parents);
 /*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
@@ -254,7 +255,7 @@ void
 rpl_dag_init(void)
 {
   nbr_table_register(rpl_parents, (nbr_table_callback *)rpl_remove_parent);
-  //list_init(all_parents);
+  nbr_table_register(all_parents, (nbr_table_callback *)rpl_remove_parent);
 }
 /*---------------------------------------------------------------------------*/
 static rpl_parent_t *
