@@ -57,9 +57,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sys/timer.h"
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 
 #include "net/uip-debug.h"
+#include "net/rime/rimeaddr.h"
 
 uint16_t start_ms_select_parent = -1;
 uint16_t start_ms_select_dag = -1;
@@ -86,6 +87,8 @@ static rpl_of_t * const objective_functions[] = {&RPL_OF};
 /*---------------------------------------------------------------------------*/
 /* Per-parent RPL information */
 NBR_TABLE(rpl_parent_t, rpl_parents);
+/* All parents RPL information */
+//NBR_TABLE(rpl_parent_t, all_parents);
 /*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
@@ -319,7 +322,7 @@ void
 rpl_dag_init(void)
 {
 	nbr_table_register(rpl_parents, (nbr_table_callback *)rpl_remove_parent);
-	//list_init(all_parents);
+	//nbr_table_register(all_parents, (nbr_table_callback *)rpl_remove_parent);
 }
 /*---------------------------------------------------------------------------*/
 rpl_rank_t
@@ -355,7 +358,7 @@ static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
 	printf("TEST: wartosc pola set_preferred_parents na poczatku funkcji rpl_set_preferred_parent: %d \n", set_preferred_parents);
-	if(dag != NULL && dag->preferred_parent != p && set_preferred_parents == 0) {
+	if(dag != NULL && dag->preferred_parent != p){ //&& set_preferred_parents == 0) {
 		set_preferred_parents = 1;
 		if(p != NULL) {
 			PRINT6ADDR(rpl_get_parent_ipaddr(p));
@@ -376,13 +379,13 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 		nbr_table_lock(rpl_parents, p);
 		dag->preferred_parent = p;
 	}
-	else if (set_preferred_parents >= 1)
+	/*else if (set_preferred_parents >= 1)
 	{
 		rpl_set_another_preferred_parent(dag);
 	}
 	else if (dag == NULL) {
 		set_preferred_parents = 0;
-	}
+	}*/
 }
 /*---------------------------------------------------------------------------*/
 /* Greater-than function for the lollipop counter.                      */
@@ -925,7 +928,7 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
 		return NULL;
 	}
 
-	if(best_dag->preferred_parent != last_parent && already_set_pref_parent == false) {
+	if(best_dag->preferred_parent != last_parent){ //&& already_set_pref_parent == false) {
 		PRINTF("RPL: po sprawdzeniu, ze nie jest acceptable rank zgadza sie parent i  nie zostal juz wybrany pref parent\n");
 		rpl_set_default_route(instance, rpl_get_parent_ipaddr(best_dag->preferred_parent));
 		PRINTF("RPL: Changed preferred parent, rank changed from %u to %u\n",
@@ -952,12 +955,15 @@ rpl_parent_t *
 rpl_select_parent(rpl_dag_t *dag)
 {
 	rpl_parent_t *p, *best;
-
+	rimeaddr_t *current_parent_address;
 	best = NULL;
-	node *head_ = NULL;
+	node *head_local = NULL;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
-		head_ = ll_prepend(head_,p);
+		/*current_parent_address = nbr_table_get_lladdr(all_parents, p);
+		PRINTF("RPL: current_parent_address: %d\n", current_parent_address);
+		nbr_table_add_lladdr(all_parents, current_parent_address);
+		*/
 		PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
@@ -967,7 +973,7 @@ rpl_select_parent(rpl_dag_t *dag)
 			best = dag->instance->of->best_parent(best, p);
 		}
 		p = nbr_table_next(rpl_parents, p);
-		free(head_);
+
 	}
 
 	if(best != NULL) {
@@ -979,7 +985,7 @@ rpl_select_parent(rpl_dag_t *dag)
 	 start_ms_select_parent = milliseconds(start_time_select_parent);
 	 printf("TEST milliseconds(start_select_parent) : %d\n", milliseconds(start_time_select_parent));
 	 */
-	head = head_->rpl_node;
+	head = head_local->rpl_node;
 	PRINTF("RPL: rpl_select_parent, ranking glowy na koncu: %d\n", head->rank);
 
 	return best;
