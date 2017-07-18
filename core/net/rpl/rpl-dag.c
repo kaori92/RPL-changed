@@ -256,6 +256,7 @@ rpl_dag_init(void)
 {
   nbr_table_register(rpl_parents, (nbr_table_callback *)rpl_remove_parent);
   nbr_table_register(all_parents, (nbr_table_callback *)rpl_remove_parent);
+  //list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
 static rpl_parent_t *
@@ -568,7 +569,7 @@ check_prefix(rpl_prefix_t *last_prefix, rpl_prefix_t *new_prefix)
       uip_ds6_addr_rm(rep);
     }
   }
-  
+
   if(new_prefix != NULL) {
     set_ip_from_prefix(&ipaddr, new_prefix);
     if(uip_ds6_addr_lookup(&ipaddr) == NULL) {
@@ -585,7 +586,7 @@ rpl_set_prefix(rpl_dag_t *dag, uip_ipaddr_t *prefix, unsigned len)
 {
   rpl_prefix_t last_prefix;
   uint8_t last_len = dag->prefix_info.length;
-  
+
   if(len > 128) {
     return 0;
   }
@@ -602,7 +603,7 @@ rpl_set_prefix(rpl_dag_t *dag, uip_ipaddr_t *prefix, unsigned len)
   if(last_len == 0) {
     PRINTF("rpl_set_prefix - prefix NULL\n");
     check_prefix(NULL, &dag->prefix_info);
-  } else { 
+  } else {
     PRINTF("rpl_set_prefix - prefix NON-NULL\n");
     check_prefix(&last_prefix, &dag->prefix_info);
   }
@@ -1567,7 +1568,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
   } else if(dio->rank == INFINITE_RANK && dag->joined) {
     rpl_reset_dio_timer(instance);
   }
-  
+
   /* Prefix Information Option treated to add new prefix */
   if(dio->prefix_info.length != 0) {
     if(dio->prefix_info.flags & UIP_ND6_RA_FLAG_AUTONOMOUS) {
