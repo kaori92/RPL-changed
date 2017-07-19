@@ -57,7 +57,8 @@
 #include <math.h>
 #include "sys/timer.h"
 #include "net/rime/rimeaddr.h"
-#define DEBUG DEBUG_PRINT
+#include "rpl.h"
+#define DEBUG DEBUG_NONE
 
 #include "net/uip-debug.h"
 
@@ -237,13 +238,14 @@ rpl_dag_init(void)
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
-	PRINTF("RPL: setting another preferred parent\n");
+
 	//TODO
 	// find the best parent from all parents
 	rpl_parent_t *cursor;
 	rpl_parent_t *best;
 
 	cursor = head;// head of the list of parents
+	PRINTF("RPL: setting another preferred parent, cursor rank: %d\n", cursor->rank);
 	while(cursor != NULL) {
 		if(best == NULL) {
 			best = cursor;
@@ -265,9 +267,10 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
+	PRINTF("TEST: set_preferred_parents: %d \n ", set_preferred_parents);
 	if(dag != NULL && dag->preferred_parent != p){ //&& set_preferred_parents == 0) {
-		//PRINTF("RPL: rpl_set_preferred_parent ");
-		set_preferred_parents = 1;
+		PRINTF("RPL: rpl_set_preferred_parent ");
+		set_preferred_parents++;
 		if(p != NULL) {
 			PRINT6ADDR(rpl_get_parent_ipaddr(p));
 		} else {
@@ -290,8 +293,8 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 	/*else if (set_preferred_parents == 1)
 	{
 		rpl_set_another_preferred_parent(dag);
-	}
-	else if (dag == NULL) {
+	}*/
+	/*else if (dag == NULL) {
 		set_preferred_parents = 0;
 	}*/
 }
@@ -894,10 +897,9 @@ rpl_select_parent(rpl_dag_t *dag)
 	node* head_local = NULL;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
-		/*current_parent_address = nbr_table_get_lladdr(all_parents, p);
+		current_parent_address = nbr_table_get_lladdr(all_parents, p);
 		 PRINTF("RPL: current_parent_address: %d\n", current_parent_address);
 		 nbr_table_add_lladdr(all_parents, current_parent_address);
-		 */
 		PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
@@ -1132,16 +1134,16 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
 	rpl_set_preferred_parent(dag, p);
 
 	//TODO
-	if(dag->preferred_parent == NULL) {
+	/*if(dag->preferred_parent == NULL) {
 		// preferred parent failed, setting to another most preferred parent
-		clock_time_t start_time = clock_time();// Get the system time.
+		//clock_time_t start_time = clock_time();// Get the system time.
 		//printf("TEST start_time : %d\n", start_time);
 		// lengthy operation
 
 		// getting the next most preferred parent from all_parents
 
 		rpl_set_another_preferred_parent(dag);
-	}
+	}*/
 
 	instance->of->update_metric_container(instance);
 	dag->rank = instance->of->calculate_rank(p, 0);
@@ -1236,11 +1238,11 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 
 	rpl_set_preferred_parent(dag, p);
 	//TODO
-	if(dag->preferred_parent == NULL) {
+	/*if(dag->preferred_parent == NULL) {
 		// preferred parent failed, setting to another most preferred parent
 
 		rpl_set_another_preferred_parent(dag);
-	}
+	}*/
 
 	dag->rank = instance->of->calculate_rank(p, 0);
 	dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */

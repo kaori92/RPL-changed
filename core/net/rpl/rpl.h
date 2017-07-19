@@ -185,7 +185,7 @@ typedef struct rpl_instance rpl_instance_t;
  */
 struct rpl_of {
   void (*reset)(struct rpl_dag *);
-  void (*neighbor_link_callback)(rpl_parent_t *, int, int);
+  void (*neighbor_link_callback)(rpl_parent_t *, int, int, int*);
   rpl_parent_t *(*best_parent)(rpl_parent_t *, rpl_parent_t *);
   rpl_dag_t *(*best_dag)(rpl_dag_t *, rpl_dag_t *);
   rpl_rank_t (*calculate_rank)(rpl_parent_t *, rpl_rank_t);

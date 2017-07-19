@@ -47,11 +47,11 @@
 #include "net/rpl/rpl-private.h"
 #include "net/nbr-table.h"
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 static void reset(rpl_dag_t *);
-static void neighbor_link_callback(rpl_parent_t *, int, int);
+static void neighbor_link_callback(rpl_parent_t *, int, int, int*);
 static rpl_parent_t *best_parent(rpl_parent_t *, rpl_parent_t *);
 static rpl_dag_t *best_dag(rpl_dag_t *, rpl_dag_t *);
 static rpl_rank_t calculate_rank(rpl_parent_t *, rpl_rank_t);
@@ -83,8 +83,6 @@ rpl_of_t rpl_mrhof = {
  */
 #define PARENT_SWITCH_THRESHOLD_DIV	2
 
-
-
 static rpl_path_metric_t
 calculate_path_metric(rpl_parent_t *p)
 {
@@ -110,7 +108,7 @@ reset(rpl_dag_t *sag)
 }
 
 static void
-neighbor_link_callback(rpl_parent_t *p, int status, int numtx)
+neighbor_link_callback(rpl_parent_t *p, int status, int numtx, int* transmission_error_occured)
 {
   uint16_t recorded_etx = p->link_metric;
   uint16_t packet_etx = numtx * RPL_DAG_MC_ETX_DIVISOR;
@@ -120,6 +118,8 @@ neighbor_link_callback(rpl_parent_t *p, int status, int numtx)
   if(status == MAC_TX_OK || status == MAC_TX_NOACK) {
     if(status == MAC_TX_NOACK) {
       packet_etx = MAX_LINK_METRIC * RPL_DAG_MC_ETX_DIVISOR;
+      PRINTF("RPL: ETX changed  w ifie wewnetrznym \n");
+      *transmission_error_occured = 1;
     }
 
     new_etx = ((uint32_t)recorded_etx * ETX_ALPHA +

@@ -44,8 +44,9 @@
 #include "net/tcpip.h"
 #include "net/uip-ds6.h"
 #include "net/rpl/rpl-private.h"
+#include "net/rpl/rpl-mrhof.h"
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #include <limits.h>
@@ -57,6 +58,7 @@
 rpl_stats_t rpl_stats;
 #endif
 
+int transmission_error_occured = 0;
 /*---------------------------------------------------------------------------*/
 void
 rpl_purge_routes(void)
@@ -186,7 +188,8 @@ rpl_link_neighbor_callback(const rimeaddr_t *addr, int status, int numtx)
         PRINTF("RPL: rpl_link_neighbor_callback triggering update\n");
         parent->updated = 1;
         if(instance->of->neighbor_link_callback != NULL) {
-          instance->of->neighbor_link_callback(parent, status, numtx);
+          instance->of->neighbor_link_callback(parent, status, numtx, &transmission_error_occured);
+          PRINTF("RPL: rpl_link_neighbor_callback po wejsciu do ifa, wartosc transmission_error_occured: %d \n", transmission_error_occured);
         }
       }
     }
@@ -205,6 +208,7 @@ rpl_ipv6_neighbor_callback(uip_ds6_nbr_t *nbr)
   PRINTF("\n");
   for(instance = &instance_table[0], end = instance + RPL_MAX_INSTANCES; instance < end; ++instance) {
     if(instance->used == 1 ) {
+    	PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
       p = rpl_find_parent_any_dag(instance, &nbr->ipaddr);
       if(p != NULL) {
         p->rank = INFINITE_RANK;
