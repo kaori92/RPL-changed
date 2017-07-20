@@ -58,7 +58,7 @@
 #include "sys/timer.h"
 #include "net/rime/rimeaddr.h"
 #include "rpl.h"
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 
 #include "net/uip-debug.h"
 
@@ -196,6 +196,7 @@ node* ll_remove_any(node* head, node* nd) {
 
 /*End of custom list---------------------------------------------------------------------------*/
 rpl_parent_t *head;
+rpl_parent_t *parent;
 
 typedef int bool;
 #define true 1
@@ -257,19 +258,25 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 		}
 		cursor = cursor->next;
 	}
+	PRINTF("RPL: setting another preferred parent, po while\n");
 
 	nbr_table_unlock(rpl_parents, dag->preferred_parent);
 	nbr_table_lock(rpl_parents, best);
 	dag->preferred_parent = best;
+	if(best != NULL){
+		PRINTF("RPL: setting another preferred parent, best  != NULL\n");
+	} else {
+		PRINTF("RPL: setting another preferred parent, best  == NULL\n");
+	}
 	return best;
 }
 /*---------------------------------------------------------------------------*/
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-	PRINTF("TEST: set_preferred_parents: %d \n ", set_preferred_parents);
+	//PRINTF("TEST: set_preferred_parents: %d \n ", set_preferred_parents);
 	if(dag != NULL && dag->preferred_parent != p){ //&& set_preferred_parents == 0) {
-		PRINTF("RPL: rpl_set_preferred_parent ");
+		//PRINTF("RPL: rpl_set_preferred_parent ");
 		set_preferred_parents++;
 		if(p != NULL) {
 			PRINT6ADDR(rpl_get_parent_ipaddr(p));
@@ -290,6 +297,14 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 		nbr_table_lock(rpl_parents, p);
 		dag->preferred_parent = p;
 	}
+
+	if(transmission_error_occured == 1){
+		parent = rpl_set_another_preferred_parent(dag);
+		if(parent == NULL){
+			rpl_set_another_preferred_parent(dag);
+		}
+	}
+
 	/*else if (set_preferred_parents == 1)
 	{
 		rpl_set_another_preferred_parent(dag);
@@ -351,8 +366,8 @@ remove_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
 {
 	rpl_parent_t *p;
 
-	PRINTF("RPL: Removing parents (minimum rank %u)\n",
-			minimum_rank);
+	/*PRINTF("RPL: Removing parents (minimum rank %u)\n",
+			minimum_rank);*/
 
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
@@ -369,8 +384,8 @@ nullify_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
 {
 	rpl_parent_t *p;
 
-	PRINTF("RPL: Removing parents (minimum rank %u)\n",
-			minimum_rank);
+	/*PRINTF("RPL: Removing parents (minimum rank %u)\n",
+			minimum_rank);*/
 
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
@@ -435,7 +450,7 @@ rpl_set_root(uint8_t instance_id, uip_ipaddr_t *dag_id)
 	if(dag != NULL) {
 		version = dag->version;
 		RPL_LOLLIPOP_INCREMENT(version);
-		PRINTF("RPL: Dropping a joined DAG when setting this node as root");
+		//PRINTF("RPL: Dropping a joined DAG when setting this node as root");
 		if(dag == dag->instance->current_dag) {
 			dag->instance->current_dag = NULL;
 		}
@@ -444,7 +459,7 @@ rpl_set_root(uint8_t instance_id, uip_ipaddr_t *dag_id)
 
 	dag = rpl_alloc_dag(instance_id, dag_id);
 	if(dag == NULL) {
-		PRINTF("RPL: Failed to allocate a DAG\n");
+		//PRINTF("RPL: Failed to allocate a DAG\n");
 		return NULL;
 	}
 
@@ -485,11 +500,11 @@ rpl_set_root(uint8_t instance_id, uip_ipaddr_t *dag_id)
 	instance->of->update_metric_container(instance);
 	default_instance = instance;
 
-	PRINTF("RPL: Node set to be a DAG root with DAG ID ");
+	/*PRINTF("RPL: Node set to be a DAG root with DAG ID ");
 	PRINT6ADDR(&dag->dag_id);
 	PRINTF("\n");
 
-	ANNOTATE("#A root=%u\n", dag->dag_id.u8[sizeof(dag->dag_id) - 1]);
+	ANNOTATE("#A root=%u\n", dag->dag_id.u8[sizeof(dag->dag_id) - 1]);*/
 
 	rpl_reset_dio_timer(instance);
 
@@ -504,13 +519,13 @@ rpl_repair_root(uint8_t instance_id)
 	instance = rpl_get_instance(instance_id);
 	if(instance == NULL ||
 			instance->current_dag->rank != ROOT_RANK(instance)) {
-		PRINTF("RPL: rpl_repair_root triggered but not root\n");
+		//PRINTF("RPL: rpl_repair_root triggered but not root\n");
 		return 0;
 	}
 
 	RPL_LOLLIPOP_INCREMENT(instance->current_dag->version);
 	RPL_LOLLIPOP_INCREMENT(instance->dtsn_out);
-	PRINTF("RPL: rpl_repair_root initiating global repair with version %d\n", instance->current_dag->version);
+	//PRINTF("RPL: rpl_repair_root initiating global repair with version %d\n", instance->current_dag->version);
 	rpl_reset_dio_timer(instance);
 	return 1;
 }
@@ -541,9 +556,9 @@ check_prefix(rpl_prefix_t *last_prefix, rpl_prefix_t *new_prefix)
 		set_ip_from_prefix(&ipaddr, last_prefix);
 		rep = uip_ds6_addr_lookup(&ipaddr);
 		if(rep != NULL) {
-			PRINTF("RPL: removing global IP address ");
+			/*PRINTF("RPL: removing global IP address ");
 			PRINT6ADDR(&ipaddr);
-			PRINTF("\n");
+			PRINTF("\n");*/
 			uip_ds6_addr_rm(rep);
 		}
 	}
@@ -551,9 +566,9 @@ check_prefix(rpl_prefix_t *last_prefix, rpl_prefix_t *new_prefix)
 	if(new_prefix != NULL) {
 		set_ip_from_prefix(&ipaddr, new_prefix);
 		if(uip_ds6_addr_lookup(&ipaddr) == NULL) {
-			PRINTF("RPL: adding global IP address ");
+			/*PRINTF("RPL: adding global IP address ");
 			PRINT6ADDR(&ipaddr);
-			PRINTF("\n");
+			PRINTF("\n");*/
 			uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
 		}
 	}
@@ -894,7 +909,6 @@ rpl_select_parent(rpl_dag_t *dag)
 	rpl_parent_t *p, *best;
 	rimeaddr_t *current_parent_address;
 	best = NULL;
-	node* head_local = NULL;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
 		current_parent_address = nbr_table_get_lladdr(all_parents, p);
@@ -916,8 +930,8 @@ rpl_select_parent(rpl_dag_t *dag)
 		rpl_set_preferred_parent(dag, best);
 	}
 
-	head = head_local->rpl_node;
-	PRINTF("RPL: rpl_select_parent, ranking glowy na koncu: %d\n", head->rank);
+	head = p;
+	PRINTF("RPL: rpl_select_parent,  p na koncu: %d\n", p);
 	return best;
 }
 /*---------------------------------------------------------------------------*/
@@ -1021,13 +1035,13 @@ best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
 	rpl_rank_t r1, r2;
 	rpl_dag_t *dag;
 
-	PRINTF("RPL: Comparing parent ");
+	/*PRINTF("RPL: Comparing parent ");
 	PRINT6ADDR(rpl_get_parent_ipaddr(p1));
 	PRINTF(" (confidence %d, rank %d) with parent ",
 			p1->link_metric, p1->rank);
 	PRINT6ADDR(rpl_get_parent_ipaddr(p2));
 	PRINTF(" (confidence %d, rank %d)\n",
-			p2->link_metric, p2->rank);
+			p2->link_metric, p2->rank);*/
 
 	r1 = DAG_RANK(p1->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC +
 	p1->link_metric;

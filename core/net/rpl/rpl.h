@@ -85,6 +85,8 @@ typedef uint16_t rpl_ocp_t;
 #define RPL_DAG_MC_ENERGY_TYPE_BATTERY		1
 #define RPL_DAG_MC_ENERGY_TYPE_SCAVENGING	2
 
+extern int transmission_error_occured;
+
 struct rpl_metric_object_energy {
   uint8_t flags;
   uint8_t energy_est;

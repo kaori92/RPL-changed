@@ -118,17 +118,16 @@ neighbor_link_callback(rpl_parent_t *p, int status, int numtx, int* transmission
   if(status == MAC_TX_OK || status == MAC_TX_NOACK) {
     if(status == MAC_TX_NOACK) {
       packet_etx = MAX_LINK_METRIC * RPL_DAG_MC_ETX_DIVISOR;
-      PRINTF("RPL: ETX changed  w ifie wewnetrznym \n");
       *transmission_error_occured = 1;
     }
 
     new_etx = ((uint32_t)recorded_etx * ETX_ALPHA +
                (uint32_t)packet_etx * (ETX_SCALE - ETX_ALPHA)) / ETX_SCALE;
 
-    PRINTF("RPL: ETX changed from %u to %u (packet ETX = %u)\n",
+    /*PRINTF("RPL: ETX changed from %u to %u (packet ETX = %u)\n",
         (unsigned)(recorded_etx / RPL_DAG_MC_ETX_DIVISOR),
         (unsigned)(new_etx  / RPL_DAG_MC_ETX_DIVISOR),
-        (unsigned)(packet_etx / RPL_DAG_MC_ETX_DIVISOR));
+        (unsigned)(packet_etx / RPL_DAG_MC_ETX_DIVISOR));*/
     p->link_metric = new_etx;
   }
 }
@@ -197,10 +196,10 @@ best_parent(rpl_parent_t *p1, rpl_parent_t *p2)
   if(p1 == dag->preferred_parent || p2 == dag->preferred_parent) {
     if(p1_metric < p2_metric + min_diff &&
        p1_metric > p2_metric - min_diff) {
-      PRINTF("RPL: MRHOF hysteresis: %u <= %u <= %u\n",
+      /*PRINTF("RPL: MRHOF hysteresis: %u <= %u <= %u\n",
              p2_metric - min_diff,
              p1_metric,
-             p2_metric + min_diff);
+             p2_metric + min_diff);*/
       return dag->preferred_parent;
     }
   }

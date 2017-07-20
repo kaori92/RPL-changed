@@ -93,19 +93,19 @@ uip_ds6_nbr_add(uip_ipaddr_t *ipaddr, uip_lladdr_t *lladdr,
     stimer_set(&nbr->reachable, 0);
     stimer_set(&nbr->sendns, 0);
     nbr->nscount = 0;
-    PRINTF("Adding neighbor with ip addr ");
+    /*PRINTF("Adding neighbor with ip addr ");
     PRINT6ADDR(ipaddr);
     PRINTF(" link addr ");
     PRINTLLADDR(lladdr);
-    PRINTF(" state %u\n", state);
+    PRINTF(" state %u\n", state);*/
     NEIGHBOR_STATE_CHANGED(nbr);
     return nbr;
   } else {
-    PRINTF("uip_ds6_nbr_add drop ip addr ");
+    /*PRINTF("uip_ds6_nbr_add drop ip addr ");
     PRINT6ADDR(ipaddr);
     PRINTF(" link addr (%p) ", lladdr);
     PRINTLLADDR(lladdr);
-    PRINTF(" state %u\n", state);
+    PRINTF(" state %u\n", state);*/
     return NULL;
   }
 }
