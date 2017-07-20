@@ -2,6 +2,8 @@ NET =						\
 dhcpc.c						\
 hc.c						\
 nbr-table.c			\
+neighbor-attr.c					\
+neighbor-info.c					\
 netstack.c					\
 packetbuf.c					\
 packetqueue.c					\

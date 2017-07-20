@@ -45,6 +45,7 @@
 #include "net/uip-ds6.h"
 #include "net/rpl/rpl-private.h"
 #include "net/rpl/rpl-mrhof.h"
+#include "net/neighbor-info.h"
 
 #define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
@@ -92,12 +93,12 @@ rpl_purge_routes(void)
       uip_ipaddr_copy(&prefix, &r->ipaddr);
       uip_ds6_route_rm(r);
       r = uip_ds6_route_head();
-      PRINTF("No more routes to ");
-      PRINT6ADDR(&prefix);
+      //PRINTF("No more routes to ");
+      //PRINT6ADDR(&prefix);
       dag = default_instance->current_dag;
       /* Propagate this information with a No-Path DAO to preferred parent if we are not a RPL Root */
       if(dag->rank != ROOT_RANK(default_instance)) {
-        PRINTF(" -> generate No-Path DAO\n");
+        //PRINTF(" -> generate No-Path DAO\n");
         dao_output_target(dag->preferred_parent, &prefix, RPL_ZERO_LIFETIME);
         /* Don't schedule more than 1 No-Path DAO, let next iteration handle that */
         return;
@@ -142,7 +143,7 @@ rpl_remove_routes_by_nexthop(uip_ipaddr_t *nexthop, rpl_dag_t *dag)
       r = uip_ds6_route_next(r);
     }
   }
-  ANNOTATE("#L %u 0\n", nexthop->u8[sizeof(uip_ipaddr_t) - 1]);
+  //ANNOTATE("#L %u 0\n", nexthop->u8[sizeof(uip_ipaddr_t) - 1]);
 }
 /*---------------------------------------------------------------------------*/
 uip_ds6_route_t *
@@ -160,11 +161,11 @@ rpl_add_route(rpl_dag_t *dag, uip_ipaddr_t *prefix, int prefix_len,
   rep->state.lifetime = RPL_LIFETIME(dag->instance, dag->instance->default_lifetime);
   rep->state.learned_from = RPL_ROUTE_FROM_INTERNAL;
 
-  PRINTF("RPL: Added a route to ");
+  /*PRINTF("RPL: Added a route to ");
   PRINT6ADDR(prefix);
   PRINTF("/%d via ", prefix_len);
   PRINT6ADDR(next_hop);
-  PRINTF("\n");
+  PRINTF("\n");*/
 
   return rep;
 }
@@ -185,7 +186,7 @@ rpl_link_neighbor_callback(const rimeaddr_t *addr, int status, int numtx)
       parent = rpl_find_parent_any_dag(instance, &ipaddr);
       if(parent != NULL) {
         /* Trigger DAG rank recalculation. */
-        PRINTF("RPL: rpl_link_neighbor_callback triggering update\n");
+        //PRINTF("RPL: rpl_link_neighbor_callback triggering update\n");
         parent->updated = 1;
         if(instance->of->neighbor_link_callback != NULL) {
           instance->of->neighbor_link_callback(parent, status, numtx, &transmission_error_occured);
@@ -208,7 +209,7 @@ rpl_ipv6_neighbor_callback(uip_ds6_nbr_t *nbr)
   PRINTF("\n");
   for(instance = &instance_table[0], end = instance + RPL_MAX_INSTANCES; instance < end; ++instance) {
     if(instance->used == 1 ) {
-    	PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
+    	//PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
       p = rpl_find_parent_any_dag(instance, &nbr->ipaddr);
       if(p != NULL) {
         p->rank = INFINITE_RANK;
@@ -224,11 +225,12 @@ void
 rpl_init(void)
 {
   uip_ipaddr_t rplmaddr;
-  PRINTF("RPL started\n");
+  //PRINTF("RPL started\n");
   default_instance = NULL;
 
   rpl_dag_init();
   rpl_reset_periodic_timer();
+  neighbor_info_subscribe(rpl_link_neighbor_callback);
 
   /* add rpl multicast address */
   uip_create_linklocal_rplnodes_mcast(&rplmaddr);
