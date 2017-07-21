@@ -39,6 +39,7 @@
 #include "lib/memb.h"
 #include "lib/list.h"
 #include "net/nbr-table.h"
+#include <stdio.h>
 
 /* List of link-layer addresses of the neighbors, used as key in the tables */
 typedef struct nbr_table_key {
@@ -117,6 +118,8 @@ index_from_lladdr(const rimeaddr_t *lladdr)
   }
   key = list_head(nbr_table_keys);
   while(key != NULL) {
+	  //printf("TEST Dlugosc adresu &key->lladdr: %d\n", sizeof((&key->lladdr)->u8) / sizeof((&key->lladdr)->u8[0]));
+	  //printf("TEST Dlugosc adresu lladr: %d\n", sizeof(lladdr->u8) / sizeof(lladdr->u8[0]));
     if(lladdr && rimeaddr_cmp(lladdr, &key->lladdr)) {
       return index_from_key(key);
     }

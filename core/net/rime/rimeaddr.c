@@ -44,6 +44,7 @@
 
 #include "net/rime/rimeaddr.h"
 #include <string.h>
+#include <stdio.h>
 
 rimeaddr_t rimeaddr_node_addr;
 #if RIMEADDR_SIZE == 2

@@ -58,7 +58,7 @@
 #include "sys/timer.h"
 #include "net/rime/rimeaddr.h"
 #include "rpl.h"
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 
 #include "net/uip-debug.h"
 
@@ -195,15 +195,11 @@ node* ll_remove_any(node* head, node* nd) {
 }
 
 /*End of custom list---------------------------------------------------------------------------*/
-rpl_parent_t *head;
 rpl_parent_t *parent;
 
 typedef int bool;
 #define true 1
 #define false 0
-
-bool is_first_preferred_parent = true;
-int set_preferred_parents = 0;
 
 #if UIP_CONF_IPV6
 /*---------------------------------------------------------------------------*/
@@ -239,13 +235,11 @@ rpl_dag_init(void)
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
-
-	//TODO
 	// find the best parent from all parents
 	rpl_parent_t *cursor;
 	rpl_parent_t *best;
 
-	cursor = head;// head of the list of parents
+	cursor = nbr_table_head(all_parents); // head of the list of parents
 	PRINTF("RPL: setting another preferred parent, cursor rank: %d\n", cursor->rank);
 	while(cursor != NULL) {
 		if(best == NULL) {
@@ -256,7 +250,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 			//best = best_parent_mrhof(current, best);
 
 		}
-		cursor = cursor->next;
+		nbr_table_next(all_parents, cursor);
 	}
 	PRINTF("RPL: setting another preferred parent, po while\n");
 
@@ -274,10 +268,8 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-	//PRINTF("TEST: set_preferred_parents: %d \n ", set_preferred_parents);
-	if(dag != NULL && dag->preferred_parent != p){ //&& set_preferred_parents == 0) {
+	if(dag != NULL && dag->preferred_parent != p){
 		//PRINTF("RPL: rpl_set_preferred_parent ");
-		set_preferred_parents++;
 		if(p != NULL) {
 			PRINT6ADDR(rpl_get_parent_ipaddr(p));
 		} else {
@@ -285,7 +277,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 		}
 		//PRINTF(" used to be ");
 		if(dag->preferred_parent != NULL) {
-			PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
+			PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent)); // tutaj: illegal read out of bounds
 		} else {
 			//PRINTF("NULL");
 		}
@@ -304,14 +296,6 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 			rpl_set_another_preferred_parent(dag);
 		}
 	}
-
-	/*else if (set_preferred_parents == 1)
-	{
-		rpl_set_another_preferred_parent(dag);
-	}*/
-	/*else if (dag == NULL) {
-		set_preferred_parents = 0;
-	}*/
 }
 /*---------------------------------------------------------------------------*/
 rpl_rank_t
@@ -906,14 +890,13 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
 rpl_parent_t *
 rpl_select_parent(rpl_dag_t *dag)
 {
-	rpl_parent_t *p, *best;
+	rpl_parent_t *p = NULL, *best = NULL;
 	rimeaddr_t *current_parent_address;
-	best = NULL;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
 		current_parent_address = nbr_table_get_lladdr(all_parents, p);
-		 PRINTF("RPL: current_parent_address: %d\n", current_parent_address);
-		 nbr_table_add_lladdr(all_parents, current_parent_address);
+		PRINTF("RPL: current_parent_address: %d\n", current_parent_address);
+		nbr_table_add_lladdr(all_parents, current_parent_address);
 		PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
@@ -923,15 +906,12 @@ rpl_select_parent(rpl_dag_t *dag)
 			best = dag->instance->of->best_parent(best, p);
 		}
 		p = nbr_table_next(rpl_parents, p);
-
 	}
 
 	if(best != NULL) {
 		rpl_set_preferred_parent(dag, best);
 	}
-
-	head = p;
-	PRINTF("RPL: rpl_select_parent,  p na koncu: %d\n", p);
+	PRINTF("RPL: rpl_select_parent, p na koncu: %d\n", p); // zawsze 0
 	return best;
 }
 /*---------------------------------------------------------------------------*/
