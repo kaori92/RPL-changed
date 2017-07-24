@@ -154,6 +154,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #endif
 
   PROCESS_BEGIN();
+
   //powertrace_start(CLOCK_SECOND * 2);
   PROCESS_PAUSE();
   //powertrace_print("POWERTRACE: ");

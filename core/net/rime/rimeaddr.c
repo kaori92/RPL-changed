@@ -66,6 +66,9 @@ rimeaddr_copy(rimeaddr_t *dest, const rimeaddr_t *src)
 int
 rimeaddr_cmp(const rimeaddr_t *addr1, const rimeaddr_t *addr2)
 {
+	/*printf("TEST addr1 %d\n",addr1);
+	printf("TEST addr2 %d\n",addr2);
+	printf("TEST RIMEADDR_SIZE %d\n",RIMEADDR_SIZE);*/
 	return (memcmp(addr1, addr2, RIMEADDR_SIZE) == 0);
 }
 /*---------------------------------------------------------------------------*/

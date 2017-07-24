@@ -53,7 +53,7 @@ static uint8_t used_map[NBR_TABLE_MAX_NEIGHBORS];
 /* For each neighbor, a map of the tables that lock the neighbor */
 static uint8_t locked_map[NBR_TABLE_MAX_NEIGHBORS];
 /* The maximum number of tables */
-#define MAX_NUM_TABLES 8
+#define MAX_NUM_TABLES 30
 /* A list of pointers to tables in use */
 static struct nbr_table *all_tables[MAX_NUM_TABLES];
 /* The current number of tables */
