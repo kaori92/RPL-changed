@@ -47,7 +47,7 @@
 #include "net/rpl/rpl-mrhof.h"
 #include "net/neighbor-info.h"
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #include <limits.h>
@@ -190,7 +190,8 @@ rpl_link_neighbor_callback(const rimeaddr_t *addr, int status, int numtx)
         parent->updated = 1;
         if(instance->of->neighbor_link_callback != NULL) {
           instance->of->neighbor_link_callback(parent, status, numtx, &transmission_error_occured);
-          PRINTF("RPL: rpl_link_neighbor_callback po wejsciu do ifa, wartosc transmission_error_occured: %d \n", transmission_error_occured);
+          PRINTF("RPL: rpl_link_neighbor_callback po wejsciu do ifa, "
+        		  "wartosc transmission_error_occured: %d \n", transmission_error_occured);
         }
       }
     }
@@ -230,7 +231,7 @@ rpl_init(void)
 
   rpl_dag_init();
   rpl_reset_periodic_timer();
-  //neighbor_info_subscribe(rpl_link_neighbor_callback);
+  neighbor_info_subscribe(rpl_link_neighbor_callback);
 
   /* add rpl multicast address */
   uip_create_linklocal_rplnodes_mcast(&rplmaddr);

@@ -117,6 +117,7 @@ index_from_lladdr(const rimeaddr_t *lladdr)
     lladdr = &rimeaddr_null;
   }
   key = list_head(nbr_table_keys);
+  //printf("TEST index_from_lladdr: wartosc key: %d \n", key);
   while(key != NULL) {
 	  //printf("TEST Dlugosc adresu &key->lladdr: %d\n", sizeof((&key->lladdr)->u8) / sizeof((&key->lladdr)->u8[0]));
 	  //printf("TEST Dlugosc adresu lladr: %d\n", sizeof(lladdr->u8) / sizeof(lladdr->u8[0]));
@@ -125,6 +126,7 @@ index_from_lladdr(const rimeaddr_t *lladdr)
     }
     key = list_item_next(key);
   }
+  //printf("TEST index_from_lladdr: wyszlam z petli \n"); // wypisuje sie zawsze
   return -1;
 }
 /*---------------------------------------------------------------------------*/
@@ -318,6 +320,8 @@ void *
 nbr_table_get_from_lladdr(nbr_table_t *table, const rimeaddr_t *lladdr)
 {
   void *item = item_from_index(table, index_from_lladdr(lladdr));
+  //printf("TEST: index_from_lladdr(lladdr): %d \n ", index_from_lladdr(lladdr));
+  //printf("TEST: item_from_index(table, index_from_lladdr(lladdr)): %d \n ", item_from_index(table, index_from_lladdr(lladdr)));
   return nbr_get_bit(used_map, table, item) ? item : NULL;
 }
 /*---------------------------------------------------------------------------*/
