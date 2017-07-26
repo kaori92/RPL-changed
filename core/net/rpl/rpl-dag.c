@@ -82,6 +82,7 @@ node* ll_create(rpl_parent_t* rpl_node, node* next) {
 	return new_node;
 }
 
+
 node* ll_prepend(node* head, rpl_parent_t* data) {
 	node* new_node = ll_create(data, head);
 	head = new_node;
@@ -196,6 +197,7 @@ node* ll_remove_any(node* head, node* nd) {
 
 /*End of custom list---------------------------------------------------------------------------*/
 rpl_parent_t *parent;
+rpl_parent_t *head;
 
 typedef int bool;
 #define true 1
@@ -215,11 +217,11 @@ static rpl_of_t * const objective_functions[] = {&RPL_OF};
 #define RPL_GROUNDED                    RPL_CONF_GROUNDED
 #endif /* !RPL_CONF_GROUNDED */
 /* Maintain a list of all parents. */
-//LIST_STRUCT(all_parents);
+LIST_STRUCT(all_parents);
 /*---------------------------------------------------------------------------*/
 /* Per-parent RPL information */
 NBR_TABLE(rpl_parent_t, rpl_parents);
-NBR_TABLE(rpl_parent_t, all_parents);
+
 /*---------------------------------------------------------------------------*/
 /* Allocate instance table. */
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
@@ -229,7 +231,7 @@ void
 rpl_dag_init(void)
 {
 	nbr_table_register(rpl_parents, (nbr_table_callback *)rpl_remove_parent);
-	nbr_table_register(all_parents, (nbr_table_callback *)rpl_remove_parent);
+	list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
 static rpl_parent_t *
@@ -238,28 +240,17 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 	// find the best parent from all parents
 	rpl_parent_t *cursor = NULL;
 	rpl_parent_t *best = NULL;
-
-	//cursor = nbr_table_head(all_parents); // head of the list of parents
-	// w cursor mam item z tablicy sasiadow
-	//PRINTF("TEST: item size tabeli all_parents: %d\n", all_parents->item_size);
-	//PRINTF("TEST: setting another preferred parent, wartosc cursor rank : %d\n", cursor->rank);
-	//cursor = head;
+	cursor = list_head(all_parents); // head of the list of parents
 
 	while(cursor != NULL) {
-		PRINTF("TEST:  wartosc cursor w petli: %d\n", cursor);
-		PRINTF("TEST:  wartosc cursor rank w petli: %d\n", cursor->rank);
 		if(best == NULL) {
-			PRINTF("TEST:  best == NULL, ustawiam best na wartosc kursora\n");
-
 			best = cursor;
 		}
 		else {
-			PRINTF("TEST:  best != NULL, obliczam best\n");
 			best = best_parent_of0(cursor, best);
 			//best = best_parent_mrhof(current, best);
 		}
-		cursor = nbr_table_next(all_parents, cursor);
-		//cursor = cursor->next;
+		list_item_next(cursor);
 	}
 	nbr_table_unlock(rpl_parents, dag->preferred_parent);
 	nbr_table_lock(rpl_parents, best);
@@ -294,10 +285,10 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 	}
 
 	if(transmission_error_occured == 1){
-		PRINTF("TEST: transmission_error_occured!! \n");
+		//PRINTF("TEST: transmission_error_occured!! \n");
 		parent = rpl_set_another_preferred_parent(dag);
 		if(parent == NULL){
-			rpl_set_another_preferred_parent(dag);
+			//rpl_set_another_preferred_parent(dag);
 		}
 	}
 }
@@ -906,12 +897,12 @@ rpl_parent_t *
 rpl_select_parent(rpl_dag_t *dag)
 {
 	rpl_parent_t *p = NULL, *best = NULL;
+	node* head_ = NULL;
 	rimeaddr_t *current_parent_address;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
-		current_parent_address = nbr_table_get_lladdr(rpl_parents, p); // tutaj read from nonexistent io
-		//PRINTF("RPL: current_parent_address: %d\n", current_parent_address);
-		nbr_table_add_lladdr(all_parents, current_parent_address);
+		 head_ = ll_append(head_,p);
+
 		PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
@@ -1316,6 +1307,7 @@ rpl_recalculate_ranks(void)
 			PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				PRINTF("RPL: A parent was dropped\n");
+				rpl_set_another_preferred_parent(p->dag);
 			}
 		}
 		p = nbr_table_next(rpl_parents, p);
