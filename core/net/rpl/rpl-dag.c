@@ -286,7 +286,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 
 	if(transmission_error_occured == 1){
 		//PRINTF("TEST: transmission_error_occured!! \n");
-		parent = rpl_set_another_preferred_parent(dag);
+		//parent = rpl_set_another_preferred_parent(dag);
 		if(parent == NULL){
 			//rpl_set_another_preferred_parent(dag);
 		}
@@ -901,8 +901,8 @@ rpl_select_parent(rpl_dag_t *dag)
 	rimeaddr_t *current_parent_address;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
-		 head_ = ll_append(head_,p);
-
+		 //head_ = ll_append(head_,p);
+		 list_add(all_parents, p);
 		PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
