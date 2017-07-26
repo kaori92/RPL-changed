@@ -239,14 +239,18 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 	rpl_parent_t *cursor = NULL;
 	rpl_parent_t *best = NULL;
 
-	cursor = nbr_table_head(all_parents); // head of the list of parents
-	PRINTF("TEST: item size tabeli all_parents: %d\n", all_parents->item_size);
-	//PRINTF("TEST: setting another preferred parent, wartosc cursor : %d\n", cursor);
+	//cursor = nbr_table_head(all_parents); // head of the list of parents
+	// w cursor mam item z tablicy sasiadow
+	//PRINTF("TEST: item size tabeli all_parents: %d\n", all_parents->item_size);
+	//PRINTF("TEST: setting another preferred parent, wartosc cursor rank : %d\n", cursor->rank);
+	//cursor = head;
 
 	while(cursor != NULL) {
 		PRINTF("TEST:  wartosc cursor w petli: %d\n", cursor);
+		PRINTF("TEST:  wartosc cursor rank w petli: %d\n", cursor->rank);
 		if(best == NULL) {
 			PRINTF("TEST:  best == NULL, ustawiam best na wartosc kursora\n");
+
 			best = cursor;
 		}
 		else {
@@ -255,6 +259,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 			//best = best_parent_mrhof(current, best);
 		}
 		cursor = nbr_table_next(all_parents, cursor);
+		//cursor = cursor->next;
 	}
 	nbr_table_unlock(rpl_parents, dag->preferred_parent);
 	nbr_table_lock(rpl_parents, best);
