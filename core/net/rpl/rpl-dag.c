@@ -775,10 +775,12 @@ find_parent_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
 }
 /*---------------------------------------------------------------------------*/
 rpl_parent_t *
-rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
+rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr, int* transmission_error_ipv6_occured)
 {
 	rpl_parent_t *p = find_parent_any_dag_any_instance(addr);
 	if(p && p->dag && p->dag->instance == instance) {
+		PRINTF("TEST3: test jestem w ifie rpl_find_parent_any_dag\n");
+		*transmission_error_ipv6_occured = 1;
 		return p;
 	} else {
 		return NULL;
@@ -1307,6 +1309,9 @@ rpl_recalculate_ranks(void)
 			PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				PRINTF("RPL: A parent was dropped\n");
+				rpl_set_another_preferred_parent(p->dag);
+			} else if(transmission_error_occured == 1 || transmission_error_ipv6_occured == 1){
+				PRINTF("RPL: Transmission error \n");
 				rpl_set_another_preferred_parent(p->dag);
 			}
 		}

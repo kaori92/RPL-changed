@@ -60,6 +60,7 @@ rpl_stats_t rpl_stats;
 #endif
 
 int transmission_error_occured = 0;
+int transmission_error_ipv6_occured = 0;
 /*---------------------------------------------------------------------------*/
 void
 rpl_purge_routes(void)
@@ -183,7 +184,7 @@ rpl_link_neighbor_callback(const rimeaddr_t *addr, int status, int numtx)
 
   for(instance = &instance_table[0], end = instance + RPL_MAX_INSTANCES; instance < end; ++instance) {
     if(instance->used == 1 ) {
-      parent = rpl_find_parent_any_dag(instance, &ipaddr);
+      parent = rpl_find_parent_any_dag(instance, &ipaddr, NULL);
       if(parent != NULL) {
         /* Trigger DAG rank recalculation. */
         //PRINTF("RPL: rpl_link_neighbor_callback triggering update\n");
@@ -210,8 +211,11 @@ rpl_ipv6_neighbor_callback(uip_ds6_nbr_t *nbr)
   PRINTF("\n");
   for(instance = &instance_table[0], end = instance + RPL_MAX_INSTANCES; instance < end; ++instance) {
     if(instance->used == 1 ) {
-    	//PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
-      p = rpl_find_parent_any_dag(instance, &nbr->ipaddr);
+      //PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
+
+      p = rpl_find_parent_any_dag(instance, &nbr->ipaddr, &transmission_error_ipv6_occured);
+      PRINTF("RPL: rpl_ipv6_neighbor_callback po wejsciu do ifa, "
+              		  "wartosc transmission_error_ipv6_occured: %d \n", transmission_error_ipv6_occured);
       if(p != NULL) {
         p->rank = INFINITE_RANK;
         /* Trigger DAG rank recalculation. */
@@ -232,6 +236,7 @@ rpl_init(void)
   rpl_dag_init();
   rpl_reset_periodic_timer();
   neighbor_info_subscribe(rpl_link_neighbor_callback);
+  neighbor_info_subscribe(rpl_ipv6_neighbor_callback);
 
   /* add rpl multicast address */
   uip_create_linklocal_rplnodes_mcast(&rplmaddr);
