@@ -775,7 +775,7 @@ find_parent_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
 }
 /*---------------------------------------------------------------------------*/
 rpl_parent_t *
-rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr)
+rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr, int* transmission_error_ipv6_occured)
 {
 	rpl_parent_t *p = find_parent_any_dag_any_instance(addr);
 	if(p && p->dag && p->dag->instance == instance) {
