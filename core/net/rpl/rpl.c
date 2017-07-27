@@ -47,7 +47,7 @@
 #include "net/rpl/rpl-mrhof.h"
 #include "net/neighbor-info.h"
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
 #include <limits.h>

@@ -53,7 +53,7 @@
 #include <limits.h>
 #include <string.h>
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 
 #include "net/uip-debug.h"
 
@@ -229,21 +229,21 @@ dio_input(void)
                               0, NBR_REACHABLE)) != NULL) {
       /* set reachable timer */
       stimer_set(&nbr->reachable, UIP_ND6_REACHABLE_TIME / 1000);
-      PRINTF("RPL: Neighbor added to neighbor cache ");
+      /*PRINTF("RPL: Neighbor added to neighbor cache ");
       PRINT6ADDR(&from);
       PRINTF(", ");
       PRINTLLADDR((uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER));
-      PRINTF("\n");
+      PRINTF("\n");*/
     } else {
-      PRINTF("RPL: Out of Memory, dropping DIO from ");
+      /*PRINTF("RPL: Out of Memory, dropping DIO from ");
       PRINT6ADDR(&from);
       PRINTF(", ");
       PRINTLLADDR((uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER));
-      PRINTF("\n");
+      PRINTF("\n");*/
       return;
     }
   } else {
-    PRINTF("RPL: Neighbor already in neighbor cache\n");
+    //PRINTF("RPL: Neighbor already in neighbor cache\n");
   }
 
   buffer_length = uip_len - uip_l3_icmp_hdr_len;
@@ -257,10 +257,10 @@ dio_input(void)
   dio.rank = get16(buffer, i);
   i += 2;
 
-  PRINTF("RPL: Incoming DIO (id, ver, rank) = (%u,%u,%u)\n",
+  /*PRINTF("RPL: Incoming DIO (id, ver, rank) = (%u,%u,%u)\n",
          (unsigned)dio.instance_id,
          (unsigned)dio.version, 
-         (unsigned)dio.rank);
+         (unsigned)dio.rank);*/
 
   dio.grounded = buffer[i] & RPL_DIO_GROUNDED;
   dio.mop = (buffer[i]& RPL_DIO_MOP_MASK) >> RPL_DIO_MOP_SHIFT;
@@ -273,9 +273,9 @@ dio_input(void)
   memcpy(&dio.dag_id, buffer + i, sizeof(dio.dag_id));
   i += sizeof(dio.dag_id);
 
-  PRINTF("RPL: Incoming DIO (dag_id, pref) = (");
+  /*PRINTF("RPL: Incoming DIO (dag_id, pref) = (");
   PRINT6ADDR(&dio.dag_id);
-  PRINTF(", %u)\n", dio.preference);
+  PRINTF(", %u)\n", dio.preference);*/
 
   /* Check if there are any DIO suboptions. */
   for(; i < buffer_length; i += len) {
@@ -314,24 +314,24 @@ dio_input(void)
       } else if(dio.mc.type == RPL_DAG_MC_ETX) {
         dio.mc.obj.etx = get16(buffer, i + 6);
 
-        PRINTF("RPL: DAG MC: type %u, flags %u, aggr %u, prec %u, length %u, ETX %u\n",
+        /*PRINTF("RPL: DAG MC: type %u, flags %u, aggr %u, prec %u, length %u, ETX %u\n",
 	       (unsigned)dio.mc.type,  
 	       (unsigned)dio.mc.flags, 
 	       (unsigned)dio.mc.aggr, 
 	       (unsigned)dio.mc.prec, 
 	       (unsigned)dio.mc.length, 
-	       (unsigned)dio.mc.obj.etx);
+	       (unsigned)dio.mc.obj.etx);*/
       } else if(dio.mc.type == RPL_DAG_MC_ENERGY) {
         dio.mc.obj.energy.flags = buffer[i + 6];
         dio.mc.obj.energy.energy_est = buffer[i + 7];
       } else {
-       PRINTF("RPL: Unhandled DAG MC type: %u\n", (unsigned)dio.mc.type);
+       //PRINTF("RPL: Unhandled DAG MC type: %u\n", (unsigned)dio.mc.type);
        return;
       }
       break;
     case RPL_OPTION_ROUTE_INFO:
       if(len < 9) {
-        PRINTF("RPL: Invalid destination prefix option, len = %d\n", len);
+        //PRINTF("RPL: Invalid destination prefix option, len = %d\n", len);
 	RPL_STAT(rpl_stats.malformed_msgs++);
         return;
       }
@@ -842,10 +842,10 @@ dao_ack_input(void)
   sequence = buffer[2];
   status = buffer[3];
 
-  PRINTF("RPL: Received a DAO ACK with sequence number %d and status %d from ",
+  /*PRINTF("RPL: Received a DAO ACK with sequence number %d and status %d from ",
     sequence, status);
   PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
-  PRINTF("\n");
+  PRINTF("\n");*/
 #endif /* DEBUG */
 }
 /*---------------------------------------------------------------------------*/
@@ -854,9 +854,9 @@ dao_ack_output(rpl_instance_t *instance, uip_ipaddr_t *dest, uint8_t sequence)
 {
   unsigned char *buffer;
 
-  PRINTF("RPL: Sending a DAO ACK with sequence number %d to ", sequence);
+  /*PRINTF("RPL: Sending a DAO ACK with sequence number %d to ", sequence);
   PRINT6ADDR(dest);
-  PRINTF("\n");
+  PRINTF("\n");*/
 
   buffer = UIP_ICMP_PAYLOAD;
 
