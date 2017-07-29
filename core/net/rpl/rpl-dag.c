@@ -779,6 +779,7 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr, int* trans
 {
 	rpl_parent_t *p = find_parent_any_dag_any_instance(addr);
 	if(p && p->dag && p->dag->instance == instance) {
+		transmission_error_ipv6_occured = 1;
 		return p;
 	} else {
 		return NULL;
