@@ -240,6 +240,7 @@ timeout_check(void *ptr)
         item = item->next;
       }
     }
+    printf("TEST: wywoluje ctimer_set w neighbor-attr.c \n");
     ctimer_set(&ct, TIMEOUT_SECONDS * CLOCK_SECOND, timeout_check, ptr);
   }
 }

@@ -320,7 +320,7 @@ rpl_get_parent_ipaddr(rpl_parent_t *p)
 {
 	rimeaddr_t *lladdr = nbr_table_get_lladdr(rpl_parents, p);
 
-	PRINTF("TEST: nbr_table_get_lladdr(rpl_parents, p): %d \n ", nbr_table_get_lladdr(rpl_parents, p));
+	//PRINTF("TEST: nbr_table_get_lladdr(rpl_parents, p): %d \n ", nbr_table_get_lladdr(rpl_parents, p));
 	return uip_ds6_nbr_ipaddr_from_lladdr((uip_lladdr_t *)lladdr);
 }
 
@@ -380,10 +380,13 @@ nullify_parents(rpl_dag_t *dag, rpl_rank_t minimum_rank)
 static int
 should_send_dao(rpl_instance_t *instance, rpl_dio_t *dio, rpl_parent_t *p)
 {
+	PRINTF("RPL: jestem w should_send_dao \n");
 	/* if MOP is set to no downward routes no DAO should be sent */
 	if(instance->mop == RPL_MOP_NO_DOWNWARD_ROUTES) {
+		PRINTF("RPL: jestem w should_send_dao if(instance->mop == RPL_MOP_NO_DOWNWARD_ROUTES \n");
 		return 0;
 	}
+	PRINTF("RPL: jestem w should_send_dao !(instance->mop == RPL_MOP_NO_DOWNWARD_ROUTES \n");
 	/* check if the new DTSN is more recent */
 	return p == instance->current_dag->preferred_parent &&
 	(lollipop_greater_than(dio->dtsn, p->dtsn));
@@ -779,7 +782,7 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr, int* trans
 {
 	rpl_parent_t *p = find_parent_any_dag_any_instance(addr);
 	if(p && p->dag && p->dag->instance == instance) {
-		PRINTF("TEST3: test jestem w ifie rpl_find_parent_any_dag\n");
+		PRINTF("TEST3: rpl_find_parent_any_dag test jestem w ifie rpl_find_parent_any_dag, ustawiam transmission_error_ipv6_occured = 1\n");
 		transmission_error_ipv6_occured = 1;
 		return p;
 	} else {
@@ -859,6 +862,7 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
 		rpl_set_preferred_parent(instance->current_dag, NULL);
 		if(instance->mop != RPL_MOP_NO_DOWNWARD_ROUTES && last_parent != NULL) {
 			/* Send a No-Path DAO to the removed preferred parent. */
+			PRINTF("RPL: rpl_select_dag dao_output: \n");
 			dao_output(last_parent, RPL_ZERO_LIFETIME);
 		}
 		return NULL;
@@ -880,11 +884,13 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
 		RPL_STAT(rpl_stats.parent_switch++);
 		if(instance->mop != RPL_MOP_NO_DOWNWARD_ROUTES) {
 			if(last_parent != NULL) {
+				PRINTF("RPL: rpl_select_dag dao_output \n");
 				/* Send a No-Path DAO to the removed preferred parent. */
 				dao_output(last_parent, RPL_ZERO_LIFETIME);
 			}
 			/* The DAO parent set changed - schedule a DAO transmission. */
 			RPL_LOLLIPOP_INCREMENT(instance->dtsn_out);
+			PRINTF("RPL: rpl_select_dag rpl_schedule_dao \n");
 			rpl_schedule_dao(instance);
 		}
 		rpl_reset_dio_timer(instance);
@@ -1080,16 +1086,16 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
 	instance = dag->instance;
 
 	p = rpl_add_parent(dag, dio, from);
-	PRINTF("RPL: Adding ");
+	/*PRINTF("RPL: Adding ");
 	PRINT6ADDR(from);
-	PRINTF(" as a parent: ");
+	PRINTF(" as a parent: ");*/
 	if(p == NULL) {
-		PRINTF("failed\n");
+		//PRINTF("failed\n");
 		instance->used = 0;
 		return;
 	}
 	p->dtsn = dio->dtsn;
-	PRINTF("succeeded\n");
+	//PRINTF("succeeded\n");
 
 	/* Determine the objective function by using the
 	 objective code point of the DIO. */
@@ -1154,6 +1160,7 @@ rpl_join_instance(uip_ipaddr_t *from, rpl_dio_t *dio)
 	rpl_set_default_route(instance, from);
 
 	if(instance->mop != RPL_MOP_NO_DOWNWARD_ROUTES) {
+		PRINTF("RPL: rpl_join_instance rpl_schedule_dao\n");
 		rpl_schedule_dao(instance);
 	} else {
 		PRINTF("RPL: The DIO does not meet the prerequisites for sending a DAO\n");
@@ -1311,7 +1318,9 @@ rpl_recalculate_ranks(void)
 				PRINTF("RPL: A parent was dropped\n");
 				rpl_set_another_preferred_parent(p->dag);
 			} else if(transmission_error_occured == 1){ //|| transmission_error_ipv6_occured == 1){
-				PRINTF("RPL: Transmission error \n");
+				//PRINTF("RPL: Transmission error: \n");
+				PRINTF("RPL: Transmission error: transmission_error_occured: %d\n", transmission_error_occured);
+				PRINTF("RPL: Transmission error: transmission_error_ipv6_occured: %d\n", transmission_error_ipv6_occured);
 				rpl_set_another_preferred_parent(p->dag);
 			}
 		}
@@ -1352,8 +1361,8 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 
 #if DEBUG
 	if(DAG_RANK(old_rank, instance) != DAG_RANK(instance->current_dag->rank, instance)) {
-		PRINTF("RPL: Moving in the instance from rank %hu to %hu\n",
-				DAG_RANK(old_rank, instance), DAG_RANK(instance->current_dag->rank, instance));
+		//PRINTF("RPL: Moving in the instance from rank %hu to %hu\n",
+		//		DAG_RANK(old_rank, instance), DAG_RANK(instance->current_dag->rank, instance));
 		if(instance->current_dag->rank != INFINITE_RANK) {
 			PRINTF("RPL: The preferred parent is ");
 			PRINT6ADDR(rpl_get_parent_ipaddr(instance->current_dag->preferred_parent));
@@ -1376,7 +1385,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 	rpl_parent_t *p;
 
 	if(dio->mop != RPL_MOP_DEFAULT) {
-		PRINTF("RPL: Ignoring a DIO with an unsupported MOP: %d\n", dio->mop);
+		//PRINTF("RPL: Ignoring a DIO with an unsupported MOP: %d\n", dio->mop);
 		return;
 	}
 
@@ -1386,7 +1395,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 	if(dag != NULL && instance != NULL) {
 		if(lollipop_greater_than(dio->version, dag->version)) {
 			if(dag->rank == ROOT_RANK(instance)) {
-				PRINTF("RPL: Root received inconsistent DIO version number\n");
+				//PRINTF("RPL: Root received inconsistent DIO version number\n");
 				dag->version = dio->version;
 				RPL_LOLLIPOP_INCREMENT(dag->version);
 				rpl_reset_dio_timer(instance);
@@ -1507,6 +1516,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 	/* We don't use route control, so we can have only one official parent. */
 	if(dag->joined && p == dag->preferred_parent) {
 		if(should_send_dao(instance, dio, p)) {
+			PRINTF("RPL: rpl_process_dio, should_send_dao zwrocilo true: wywoluje rpl_schedule_dao \n");
 			RPL_LOLLIPOP_INCREMENT(instance->dtsn_out);
 			rpl_schedule_dao(instance);
 		}

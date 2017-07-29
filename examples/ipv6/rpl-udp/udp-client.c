@@ -206,6 +206,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
     //puts(text);
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
+      printf("TEST: wywoluje ctimer_set w udp-client.c \n");
       ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
 
 #if WITH_COMPOWER
