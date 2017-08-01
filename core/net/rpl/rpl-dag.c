@@ -62,6 +62,8 @@
 
 #include "net/uip-debug.h"
 
+uint16_t start_ms_recalculate_ranks = -1;
+
 /* custom LIST ---------------------------------------------------------------------------*/
 struct node {
 	rpl_parent_t* rpl_node;
@@ -227,6 +229,12 @@ NBR_TABLE(rpl_parent_t, rpl_parents);
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
 rpl_instance_t *default_instance;
 /*---------------------------------------------------------------------------*/
+uint16_t milliseconds( clock_time_t time )
+{
+	//printf("TEST clock_time_t (int) time : %d\n", (int)time);
+	return (uint16_t)(time - (int) time) * 1000;
+}
+/*---------------------------------------------------------------------------*/
 void
 rpl_dag_init(void)
 {
@@ -234,20 +242,39 @@ rpl_dag_init(void)
 	list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
+static void compute_length_of_reconstruction(){
+	if(start_ms_recalculate_ranks != -1){
+		clock_time_t end_time_recalculate_ranks = clock_time(); // Get the system time.
+		uint16_t end_ms_recalculate_ranks = milliseconds(end_time_recalculate_ranks);
+		printf("TIME milliseconds(end_ms_recalculate_ranks) : %d\n", milliseconds(end_ms_recalculate_ranks));
+		int difference_recalculate_ranks = end_ms_recalculate_ranks - start_ms_recalculate_ranks;
+		printf("TIME elapsed time in ms difference_recalculate_ranks: %d\n", difference_recalculate_ranks);
+	}
+}
+/*---------------------------------------------------------------------------*/
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
+	//PRINTF("TEST: na poczatku rpl_set_another_preferred_parent \n");
 	// find the best parent from all parents
+	int limit = 10;
+	int it = 0;
 	rpl_parent_t *cursor = NULL;
 	rpl_parent_t *best = NULL;
 	cursor = list_head(all_parents); // head of the list of parents
-
-	while(cursor != NULL) {
+	PRINTF("TEST: list_length(all_parents) %d \n", list_length(all_parents));
+	//PRINTF("TEST: rpl_set_another_preferred_parent, cursor->rank: %d \n",cursor->rank);
+	while(cursor != NULL && it<limit) {
+		it++;
+		//PRINTF("TEST: rpl_set_another_preferred_parent, petla \n");
 		if(best == NULL) {
 			best = cursor;
+
+			//PRINTF("TEST: ustawiam best = cursor; \n");
 		}
 		else {
 			best = best_parent_of0(cursor, best);
+			//PRINTF("TEST: wywoluje best_parent_of0(cursor, best) \n");
 			//best = best_parent_mrhof(current, best);
 		}
 		list_item_next(cursor);
@@ -255,7 +282,9 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 	nbr_table_unlock(rpl_parents, dag->preferred_parent);
 	nbr_table_lock(rpl_parents, best);
 	dag->preferred_parent = best;
+	PRINTF("TEST: setting another preferred parent, it: %d\n",it);
 	PRINTF("TEST: setting another preferred parent, best->rank: %d\n",best->rank);
+
 	return best;
 }
 /*---------------------------------------------------------------------------*/
@@ -285,11 +314,11 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 	}
 
 	if(transmission_error_occured == 1){
-		//PRINTF("TEST: transmission_error_occured!! \n");
-		//parent = rpl_set_another_preferred_parent(dag);
-		if(parent == NULL){
-			//rpl_set_another_preferred_parent(dag);
-		}
+		PRINTF("TEST: transmission_error_occured!! \n");
+		parent = rpl_set_another_preferred_parent(dag);
+		/*if(parent == NULL){
+			rpl_set_another_preferred_parent(dag);
+		}*/
 	}
 }
 /*---------------------------------------------------------------------------*/
@@ -320,7 +349,7 @@ rpl_get_parent_ipaddr(rpl_parent_t *p)
 {
 	rimeaddr_t *lladdr = nbr_table_get_lladdr(rpl_parents, p);
 
-	PRINTF("TEST: nbr_table_get_lladdr(rpl_parents, p): %d \n ", nbr_table_get_lladdr(rpl_parents, p));
+	//PRINTF("TEST: nbr_table_get_lladdr(rpl_parents, p): %d \n ", nbr_table_get_lladdr(rpl_parents, p));
 	return uip_ds6_nbr_ipaddr_from_lladdr((uip_lladdr_t *)lladdr);
 }
 
@@ -786,13 +815,6 @@ rpl_find_parent_any_dag(rpl_instance_t *instance, uip_ipaddr_t *addr, int* trans
 	}
 }
 
-uint16_t milliseconds( clock_time_t time )
-{
-	//printf("TEST clock_time_t (int) time : %d\n", (int)time);
-
-	return (uint16_t)(time - (int) time) * 1000;
-}
-
 /*---------------------------------------------------------------------------*/
 rpl_dag_t *
 rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
@@ -904,7 +926,7 @@ rpl_select_parent(rpl_dag_t *dag)
 	while(p != NULL) {
 		 //head_ = ll_append(head_,p);
 		 list_add(all_parents, p);
-		PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
+		//PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
 		} else if(best == NULL) {
@@ -1308,8 +1330,17 @@ rpl_recalculate_ranks(void)
 			PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				PRINTF("RPL: A parent was dropped\n");
+				clock_time_t start_time = clock_time(); // Get the system time.
+				printf("TEST start_time : %d\n", start_time);
+				start_ms_recalculate_ranks = milliseconds(start_time);
+				printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_ms_recalculate_ranks));
 				rpl_set_another_preferred_parent(p->dag);
-			}
+				compute_length_of_reconstruction();
+			} /*else if(transmission_error_occured == 1){ //|| transmission_error_ipv6_occured == 1){
+				PRINTF("RPL: Transmission error: transmission_error_occured: %d\n", transmission_error_occured);
+				//PRINTF("RPL: Transmission error: transmission_error_ipv6_occured: %d\n", transmission_error_ipv6_occured);
+				rpl_set_another_preferred_parent(p->dag);
+				}*/
 		}
 		p = nbr_table_next(rpl_parents, p);
 	}
