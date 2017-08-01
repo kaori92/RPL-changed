@@ -45,6 +45,11 @@
 #include "sys/ctimer.h"
 #include "net/uip-ds6.h"
 
+extern int start_ms_recalculate_ranks;
+extern int start_ms_process_parent_event;
+extern int start_ms_process_parent_event2;
+extern int start_ms_recalculate_ranks2;
+
 /*---------------------------------------------------------------------------*/
 /** \brief Is IPv6 address addr the link-local, all-RPL-nodes
     multicast address? */

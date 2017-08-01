@@ -62,10 +62,7 @@
 
 #include "net/uip-debug.h"
 
-clock_time_t start_ms_recalculate_ranks = 0;
-clock_time_t start_ms_process_parent_event = 0;
-clock_time_t start_ms_process_parent_event2 = 0;
-clock_time_t start_ms_recalculate_ranks2 = 0;
+
 
 /* custom LIST ---------------------------------------------------------------------------*/
 struct node {
@@ -239,46 +236,53 @@ rpl_dag_init(void)
 	list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
-static void compute_length_of_reconstruction(){
+static void compute_length_of_reconstruction(int *passed_ms){
 	printf("TIME jestem w compute_length_of_reconstruction \n");
-	if(start_ms_recalculate_ranks != 0){
-		printf("TIME jestem w if(start_ms_recalculate_ranks != 0) \n");
-		clock_time_t end_time_recalculate_ranks = clock_time(); // Get the system time.
+
+	/*printf("TIME start_ms_recalculate_ranks: %d\n", start_ms_recalculate_ranks);
+	printf("TIME start_ms_process_parent_event: %d\n", start_ms_process_parent_event);
+	printf("TIME start_ms_process_parent_event2: %d\n", start_ms_process_parent_event2);
+	printf("TIME start_ms_recalculate_ranks2: %d\n", start_ms_recalculate_ranks2);*/
+
+	//if(start_ms_recalculate_ranks != 0){
+		//printf("TIME jestem w if(start_ms_recalculate_ranks != 0) \n");
+	int end_time_recalculate_ranks = (int)clock_time(); // Get the system time.
 		//uint16_t end_ms_recalculate_ranks = milliseconds(end_time_recalculate_ranks);
 		//printf("TIME milliseconds(end_ms_recalculate_ranks) : %d\n", milliseconds(end_ms_recalculate_ranks));
-		clock_time_t difference_recalculate_ranks = end_time_recalculate_ranks - start_ms_recalculate_ranks;
+
+	int difference_recalculate_ranks = end_time_recalculate_ranks - *passed_ms;
 		printf("TIME elapsed time in ms difference_recalculate_ranks: %d\n", difference_recalculate_ranks);
-	}
-	if(start_ms_process_parent_event != 0){
-		printf("TIME jestem w if(start_ms_process_parent_event != 0) \n");
-		clock_time_t end_time_process_parent_event = clock_time(); // Get the system time.
+	//}
+	//if(start_ms_process_parent_event != 0){
+		//printf("TIME jestem w if(start_ms_process_parent_event != 0) \n");
+		int end_time_process_parent_event = (int)clock_time(); // Get the system time.
 			//uint16_t end_ms_process_parent_event = milliseconds(end_time_process_parent_event);
 			//printf("TIME milliseconds(end_ms_process_parent_event) : %d\n", milliseconds(end_ms_process_parent_event));
-		clock_time_t difference_process_parent_event = end_time_process_parent_event - start_ms_process_parent_event;
+		int difference_process_parent_event = end_time_process_parent_event - *passed_ms;
 			printf("TIME elapsed time in ms difference_process_parent_event: %d\n", difference_process_parent_event);
-		}
-	if(start_ms_process_parent_event2 != 0){
-		printf("TIME jestem w if(start_ms_process_parent_event2 != 0 \n");
-		clock_time_t end_time_process_parent_event2 = clock_time(); // Get the system time.
+	//	}
+	//if(start_ms_process_parent_event2 != 0){
+		//printf("TIME jestem w if(start_ms_process_parent_event2 != 0 \n");
+			int end_time_process_parent_event2 = (int)clock_time(); // Get the system time.
 				//uint16_t end_ms_process_parent_event2 = milliseconds(end_time_process_parent_event2);
 				//printf("TIME milliseconds(end_ms_process_parent_event2) : %d\n", milliseconds(end_ms_process_parent_event2));
-		clock_time_t difference_process_parent_event2 = end_time_process_parent_event2 - start_ms_process_parent_event2;
+			int difference_process_parent_event2 = end_time_process_parent_event2 - *passed_ms;
 				printf("TIME elapsed time in ms difference_process_parent_event2: %d\n", difference_process_parent_event2);
-			}
-	if(start_ms_recalculate_ranks2 != 0){
-			printf("TIME jestem w if(start_ms_recalculate_ranks2 != 0 \n");
-			clock_time_t end_time_recalculate_ranks2 = clock_time(); // Get the system time.
+	//		}
+	//if(start_ms_recalculate_ranks2 != 0){
+			//printf("TIME jestem w if(start_ms_recalculate_ranks2 != 0 \n");
+				int end_time_recalculate_ranks2 = (int)clock_time(); // Get the system time.
 					//uint16_t end_ms_process_parent_event2 = milliseconds(end_time_process_parent_event2);
 					//printf("TIME milliseconds(end_ms_process_parent_event2) : %d\n", milliseconds(end_ms_process_parent_event2));
-			clock_time_t difference_recalculate_ranks2 = end_time_recalculate_ranks2 - start_ms_recalculate_ranks2;
+				int difference_recalculate_ranks2 = end_time_recalculate_ranks2 - *passed_ms;
 					printf("TIME elapsed time in ms difference_recalculate_ranks2: %d\n", difference_recalculate_ranks2);
-				}
+	//			}
 }
 /*---------------------------------------------------------------------------*/
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
-	//PRINTF("TEST: na poczatku rpl_set_another_preferred_parent \n");
+	PRINTF("TEST: na poczatku rpl_set_another_preferred_parent \n");
 	// find the best parent from all parents
 	int limit = 10;
 	int it = 0;
@@ -314,7 +318,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-	//PRINTF("RPL: rpl_set_preferred_parent \n");
+	PRINTF("RPL: rpl_set_preferred_parent \n");
 	if(dag != NULL && dag->preferred_parent != p){
 		//PRINTF("RPL: rpl_set_preferred_parent ");
 		if(p != NULL) {
@@ -1356,16 +1360,16 @@ rpl_recalculate_ranks(void)
 			PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				PRINTF("RPL: A parent was dropped\n");
-				clock_time_t start_ms_recalculate_ranks = clock_time(); // Get the system time.
+				int start_ms_recalculate_ranks = (int)clock_time(); // Get the system time.
 				printf("TIME start_ms_recalculate_ranks : %d\n", start_ms_recalculate_ranks);
 				//start_ms_recalculate_ranks = milliseconds(start_time);
 				//printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_recalculate_ranks));
 				rpl_set_another_preferred_parent(p->dag);
-				compute_length_of_reconstruction();
+				compute_length_of_reconstruction(&start_ms_recalculate_ranks);
 			} else {
-				clock_time_t start_ms_recalculate_ranks2 = clock_time(); // Get the system time.
+				int start_ms_recalculate_ranks2 = (int)clock_time(); // Get the system time.
 				printf("TIME start_ms_recalculate_ranks2 : %d\n", start_ms_recalculate_ranks2);
-				compute_length_of_reconstruction();
+				compute_length_of_reconstruction(&start_ms_recalculate_ranks2);
 			}
 
 
@@ -1395,11 +1399,11 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		/* The candidate parent is no longer valid: the rank increase resulting
 		 from the choice of it as a parent would be too high. */
 		PRINTF("RPL: Unacceptable rank %u\n", (unsigned)p->rank);
-		clock_time_t start_ms_process_parent_event = clock_time(); // Get the system time.
+		int start_ms_process_parent_event = (int)clock_time(); // Get the system time.
 		printf("TIME start_ms_process_parent_event : %d\n", start_ms_process_parent_event);
 		//start_ms_process_parent_event = milliseconds(start_time);
 		//printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_process_parent_event));
-		compute_length_of_reconstruction();
+		compute_length_of_reconstruction(&start_ms_process_parent_event);
 
 		rpl_nullify_parent(p);
 		if(p != instance->current_dag->preferred_parent) {
@@ -1423,11 +1427,11 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		if(instance->current_dag->rank != INFINITE_RANK) {
 
 
-			clock_time_t start_ms_process_parent_event2 = clock_time(); // Get the system time.
+			int start_ms_process_parent_event2 = (int)clock_time(); // Get the system time.
 			printf("TIME start_ms_process_parent_event2 : %d\n", start_ms_process_parent_event2);
 			//start_ms_process_parent_event2 = milliseconds(start_time);
 			//printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_process_parent_event2));
-			compute_length_of_reconstruction();
+			compute_length_of_reconstruction(&start_ms_process_parent_event2);
 
 
 
@@ -1490,6 +1494,10 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 	}
 
 	if(instance == NULL) {
+		/*start_ms_recalculate_ranks = 0;
+		start_ms_process_parent_event = 0;
+		start_ms_process_parent_event2 = 0;
+		start_ms_recalculate_ranks2 = 0;*/
 		PRINTF("RPL: New instance detected: Joining...\n");
 		rpl_join_instance(from, dio);
 		return;
