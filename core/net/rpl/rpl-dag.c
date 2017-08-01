@@ -62,9 +62,10 @@
 
 #include "net/uip-debug.h"
 
-uint16_t start_ms_recalculate_ranks = -1;
-uint16_t start_ms_process_parent_event = -1;
-uint16_t start_ms_process_parent_event2 = -1;
+clock_time_t start_ms_recalculate_ranks = 0;
+clock_time_t start_ms_process_parent_event = 0;
+clock_time_t start_ms_process_parent_event2 = 0;
+clock_time_t start_ms_recalculate_ranks2 = 0;
 
 /* custom LIST ---------------------------------------------------------------------------*/
 struct node {
@@ -231,12 +232,6 @@ NBR_TABLE(rpl_parent_t, rpl_parents);
 rpl_instance_t instance_table[RPL_MAX_INSTANCES];
 rpl_instance_t *default_instance;
 /*---------------------------------------------------------------------------*/
-uint16_t milliseconds( clock_time_t time )
-{
-	printf("TIME clock_time_t (int) time : %d\n", (int)time);
-	return (uint16_t)(time - (int) time) * 1000;
-}
-/*---------------------------------------------------------------------------*/
 void
 rpl_dag_init(void)
 {
@@ -245,28 +240,39 @@ rpl_dag_init(void)
 }
 /*---------------------------------------------------------------------------*/
 static void compute_length_of_reconstruction(){
-	if(start_ms_recalculate_ranks != -1){
+	printf("TIME jestem w compute_length_of_reconstruction \n");
+	if(start_ms_recalculate_ranks != 0){
+		printf("TIME jestem w if(start_ms_recalculate_ranks != 0) \n");
 		clock_time_t end_time_recalculate_ranks = clock_time(); // Get the system time.
-		uint16_t end_ms_recalculate_ranks = milliseconds(end_time_recalculate_ranks);
-		printf("TIME milliseconds(end_ms_recalculate_ranks) : %d\n", milliseconds(end_ms_recalculate_ranks));
-		int difference_recalculate_ranks = end_ms_recalculate_ranks - start_ms_recalculate_ranks;
+		//uint16_t end_ms_recalculate_ranks = milliseconds(end_time_recalculate_ranks);
+		//printf("TIME milliseconds(end_ms_recalculate_ranks) : %d\n", milliseconds(end_ms_recalculate_ranks));
+		clock_time_t difference_recalculate_ranks = end_time_recalculate_ranks - start_ms_recalculate_ranks;
 		printf("TIME elapsed time in ms difference_recalculate_ranks: %d\n", difference_recalculate_ranks);
 	}
-	if(start_ms_process_parent_event != -1){
-			clock_time_t end_time_process_parent_event = clock_time(); // Get the system time.
-			uint16_t end_ms_process_parent_event = milliseconds(end_time_process_parent_event);
-			printf("TIME milliseconds(end_ms_process_parent_event) : %d\n", milliseconds(end_ms_process_parent_event));
-			int difference_process_parent_event = end_ms_process_parent_event - start_ms_process_parent_event;
+	if(start_ms_process_parent_event != 0){
+		printf("TIME jestem w if(start_ms_process_parent_event != 0) \n");
+		clock_time_t end_time_process_parent_event = clock_time(); // Get the system time.
+			//uint16_t end_ms_process_parent_event = milliseconds(end_time_process_parent_event);
+			//printf("TIME milliseconds(end_ms_process_parent_event) : %d\n", milliseconds(end_ms_process_parent_event));
+		clock_time_t difference_process_parent_event = end_time_process_parent_event - start_ms_process_parent_event;
 			printf("TIME elapsed time in ms difference_process_parent_event: %d\n", difference_process_parent_event);
 		}
-	if(start_ms_process_parent_event2 != -1){
-				clock_time_t end_time_process_parent_event2 = clock_time(); // Get the system time.
-				uint16_t end_ms_process_parent_event2 = milliseconds(end_time_process_parent_event2);
-				printf("TIME milliseconds(end_ms_process_parent_event2) : %d\n", milliseconds(end_ms_process_parent_event2));
-				int difference_process_parent_event2 = end_ms_process_parent_event2 - start_ms_process_parent_event2;
+	if(start_ms_process_parent_event2 != 0){
+		printf("TIME jestem w if(start_ms_process_parent_event2 != 0 \n");
+		clock_time_t end_time_process_parent_event2 = clock_time(); // Get the system time.
+				//uint16_t end_ms_process_parent_event2 = milliseconds(end_time_process_parent_event2);
+				//printf("TIME milliseconds(end_ms_process_parent_event2) : %d\n", milliseconds(end_ms_process_parent_event2));
+		clock_time_t difference_process_parent_event2 = end_time_process_parent_event2 - start_ms_process_parent_event2;
 				printf("TIME elapsed time in ms difference_process_parent_event2: %d\n", difference_process_parent_event2);
 			}
-
+	if(start_ms_recalculate_ranks2 != 0){
+			printf("TIME jestem w if(start_ms_recalculate_ranks2 != 0 \n");
+			clock_time_t end_time_recalculate_ranks2 = clock_time(); // Get the system time.
+					//uint16_t end_ms_process_parent_event2 = milliseconds(end_time_process_parent_event2);
+					//printf("TIME milliseconds(end_ms_process_parent_event2) : %d\n", milliseconds(end_ms_process_parent_event2));
+			clock_time_t difference_recalculate_ranks2 = end_time_recalculate_ranks2 - start_ms_recalculate_ranks2;
+					printf("TIME elapsed time in ms difference_recalculate_ranks2: %d\n", difference_recalculate_ranks2);
+				}
 }
 /*---------------------------------------------------------------------------*/
 static rpl_parent_t *
@@ -308,7 +314,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-	PRINTF("RPL: rpl_set_preferred_parent \n");
+	//PRINTF("RPL: rpl_set_preferred_parent \n");
 	if(dag != NULL && dag->preferred_parent != p){
 		//PRINTF("RPL: rpl_set_preferred_parent ");
 		if(p != NULL) {
@@ -333,6 +339,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 
 	if(transmission_error_occured == 1){
 		PRINTF("TEST: transmission_error_occured!! \n");
+		//compute_length_of_reconstruction();
 		parent = rpl_set_another_preferred_parent(dag);
 		/*if(parent == NULL){
 			rpl_set_another_preferred_parent(dag);
@@ -1211,7 +1218,7 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 
 	dag = rpl_alloc_dag(dio->instance_id, &dio->dag_id);
 	if(dag == NULL) {
-		PRINTF("RPL: Failed to allocate a DAG object!\n");
+		//PRINTF("RPL: Failed to allocate a DAG object!\n");
 		return;
 	}
 
@@ -1219,16 +1226,16 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 
 	previous_dag = find_parent_dag(instance, from);
 	if(previous_dag == NULL) {
-		PRINTF("RPL: Adding ");
+		/*PRINTF("RPL: Adding ");
 		PRINT6ADDR(from);
-		PRINTF(" as a parent: ");
+		PRINTF(" as a parent: ");*/
 		p = rpl_add_parent(dag, dio, from);
 		if(p == NULL) {
-			PRINTF("failed\n");
+			//PRINTF("failed\n");
 			dag->used = 0;
 			return;
 		}
-		PRINTF("succeeded\n");
+		//PRINTF("succeeded\n");
 	} else {
 		p = rpl_find_parent(previous_dag, from);
 		if(p != NULL) {
@@ -1248,8 +1255,8 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 			instance->dio_redundancy != dio->dag_redund ||
 			instance->default_lifetime != dio->default_lifetime ||
 			instance->lifetime_unit != dio->lifetime_unit) {
-		PRINTF("RPL: DIO for DAG instance %u uncompatible with previos DIO\n",
-				dio->instance_id);
+		//PRINTF("RPL: DIO for DAG instance %u uncompatible with previos DIO\n",
+		//		dio->instance_id);
 		rpl_remove_parent(p);
 		dag->used = 0;
 		return;
@@ -1270,10 +1277,10 @@ rpl_add_dag(uip_ipaddr_t *from, rpl_dio_t *dio)
 	dag->rank = instance->of->calculate_rank(p, 0);
 	dag->min_rank = dag->rank; /* So far this is the lowest rank we know of. */
 
-	PRINTF("RPL: Joined DAG with instance ID %u, rank %hu, DAG ID ",
+	/*PRINTF("RPL: Joined DAG with instance ID %u, rank %hu, DAG ID ",
 			dio->instance_id, dag->rank);
 	PRINT6ADDR(&dag->dag_id);
-	PRINTF("\n");
+	PRINTF("\n");*/
 
 	ANNOTATE("#A join=%u\n", dag->dag_id.u8[sizeof(dag->dag_id) - 1]);
 
@@ -1349,13 +1356,20 @@ rpl_recalculate_ranks(void)
 			PRINTF("RPL: rpl_process_parent_event recalculate_ranks\n");
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				PRINTF("RPL: A parent was dropped\n");
-				clock_time_t start_time = clock_time(); // Get the system time.
-				printf("TIME start_time : %d\n", start_time);
-				start_ms_recalculate_ranks = milliseconds(start_time);
-				printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_recalculate_ranks));
+				clock_time_t start_ms_recalculate_ranks = clock_time(); // Get the system time.
+				printf("TIME start_ms_recalculate_ranks : %d\n", start_ms_recalculate_ranks);
+				//start_ms_recalculate_ranks = milliseconds(start_time);
+				//printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_recalculate_ranks));
 				rpl_set_another_preferred_parent(p->dag);
 				compute_length_of_reconstruction();
-			} /*else if(transmission_error_occured == 1){ //|| transmission_error_ipv6_occured == 1){
+			} else {
+				clock_time_t start_ms_recalculate_ranks2 = clock_time(); // Get the system time.
+				printf("TIME start_ms_recalculate_ranks2 : %d\n", start_ms_recalculate_ranks2);
+				compute_length_of_reconstruction();
+			}
+
+
+			/*else if(transmission_error_occured == 1){ //|| transmission_error_ipv6_occured == 1){
 				PRINTF("RPL: Transmission error: transmission_error_occured: %d\n", transmission_error_occured);
 				//PRINTF("RPL: Transmission error: transmission_error_ipv6_occured: %d\n", transmission_error_ipv6_occured);
 				rpl_set_another_preferred_parent(p->dag);
@@ -1381,11 +1395,10 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		/* The candidate parent is no longer valid: the rank increase resulting
 		 from the choice of it as a parent would be too high. */
 		PRINTF("RPL: Unacceptable rank %u\n", (unsigned)p->rank);
-		//TODO3
-		clock_time_t start_time = clock_time(); // Get the system time.
-		printf("TEST start_time : %d\n", start_time);
-		start_ms_process_parent_event = milliseconds(start_time);
-		printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_ms_process_parent_event));
+		clock_time_t start_ms_process_parent_event = clock_time(); // Get the system time.
+		printf("TIME start_ms_process_parent_event : %d\n", start_ms_process_parent_event);
+		//start_ms_process_parent_event = milliseconds(start_time);
+		//printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_process_parent_event));
 		compute_length_of_reconstruction();
 
 		rpl_nullify_parent(p);
@@ -1410,10 +1423,10 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		if(instance->current_dag->rank != INFINITE_RANK) {
 
 
-			clock_time_t start_time = clock_time(); // Get the system time.
-			printf("TEST start_time : %d\n", start_time);
-			start_ms_process_parent_event2 = milliseconds(start_time);
-			printf("TEST milliseconds(start_time) : %d\n", milliseconds(start_ms_process_parent_event2));
+			clock_time_t start_ms_process_parent_event2 = clock_time(); // Get the system time.
+			printf("TIME start_ms_process_parent_event2 : %d\n", start_ms_process_parent_event2);
+			//start_ms_process_parent_event2 = milliseconds(start_time);
+			//printf("TIME milliseconds(start_time) : %d\n", milliseconds(start_ms_process_parent_event2));
 			compute_length_of_reconstruction();
 
 
