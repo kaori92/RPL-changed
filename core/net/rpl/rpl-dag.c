@@ -277,7 +277,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 			//PRINTF("TEST: wywoluje best_parent_of0(cursor, best) \n");
 			//best = best_parent_mrhof(current, best);
 		}
-		list_item_next(cursor);
+		cursor = list_item_next(cursor);
 	}
 	nbr_table_unlock(rpl_parents, dag->preferred_parent);
 	nbr_table_lock(rpl_parents, best);
@@ -953,6 +953,7 @@ rpl_remove_parent(rpl_parent_t *parent)
 	rpl_nullify_parent(parent);
 
 	nbr_table_remove(rpl_parents, parent);
+	list_remove(all_parents, parent);
 }
 /*---------------------------------------------------------------------------*/
 void
