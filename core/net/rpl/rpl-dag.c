@@ -202,6 +202,7 @@ int start_ms_recalculate_ranks = 0;
 int start_ms_process_parent_event = 0;
 int start_ms_process_parent_event2 = 0;
 int start_ms_recalculate_ranks2 = 0;
+int start_ms_set_preferred_parent = 0;
 
 typedef int bool;
 #define true 1
@@ -241,7 +242,7 @@ rpl_dag_init(void)
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
-	PRINTF("TEST: na poczatku rpl_set_another_preferred_parent \n");
+	//PRINTF("TEST: na poczatku rpl_set_another_preferred_parent \n");
 	// find the best parent from all parents
 	int limit = 10;
 	int it = 0;
@@ -302,8 +303,15 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 
 	if(transmission_error_occured == 1) {
 		PRINTF("TEST: transmission_error_occured!! \n");
-		//compute_length_of_reconstruction();
+		//TODO3
+		start_ms_set_preferred_parent = (int)clock_time(); // Get the system time.
+		printf("TIME starting reconstruction... \n");
+		printf("TIME start_ms_set_preferred_parent : %d\n", start_ms_set_preferred_parent);
+
 		parent = rpl_set_another_preferred_parent(dag);
+		int end_time_set_preferred_parent = (int)clock_time();// Get the system time.
+		int difference_set_preferred_parent = end_time_set_preferred_parent - start_ms_set_preferred_parent;
+		printf("TIME elapsed time in ms difference_set_preferred_parent: %d\n", difference_set_preferred_parent);
 		/*if(parent == NULL){
 		 rpl_set_another_preferred_parent(dag);
 		 }*/
@@ -1286,7 +1294,7 @@ rpl_local_repair(rpl_instance_t *instance)
 	int i;
 
 	if(instance == NULL) {
-		PRINTF("RPL: local repair requested for instance NULL\n");
+		//PRINTF("RPL: local repair requested for instance NULL\n");
 		return;
 	}
 	PRINTF("RPL: Starting a local instance repair\n");
@@ -1320,14 +1328,16 @@ rpl_recalculate_ranks(void)
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				PRINTF("RPL: A parent was dropped\n");
 				start_ms_recalculate_ranks = (int)clock_time(); // Get the system time.
-				//printf("TIME start_ms_recalculate_ranks : %d\n", start_ms_recalculate_ranks);
+				printf("TIME start_ms_recalculate_ranks : %d\n", start_ms_recalculate_ranks);
+				printf("TIME starting reconstruction... \n");
 				rpl_set_another_preferred_parent(p->dag);
 				int end_time_recalculate_ranks = (int)clock_time();// Get the system time.
 				int difference_recalculate_ranks = end_time_recalculate_ranks - start_ms_recalculate_ranks;
 				printf("TIME elapsed time in ms difference_recalculate_ranks: %d\n", difference_recalculate_ranks);
 			} else {
 				start_ms_recalculate_ranks2 = (int)clock_time(); // Get the system time.
-				//printf("TIME start_ms_recalculate_ranks2 : %d\n", start_ms_recalculate_ranks2);
+				printf("TIME start_ms_recalculate_ranks2 : %d\n", start_ms_recalculate_ranks2);
+				printf("TIME starting reconstruction... \n");
 				int end_time_recalculate_ranks2 = (int)clock_time();// Get the system time.
 				int difference_recalculate_ranks2 = end_time_recalculate_ranks2 - start_ms_recalculate_ranks2;
 				printf("TIME elapsed time in ms difference_recalculate_ranks2: %d\n", difference_recalculate_ranks2);
@@ -1360,7 +1370,8 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		 from the choice of it as a parent would be too high. */
 		PRINTF("RPL: Unacceptable rank %u\n", (unsigned)p->rank);
 		start_ms_process_parent_event = (int)clock_time(); // Get the system time.
-		//printf("TIME start_ms_process_parent_event : %d\n", start_ms_process_parent_event);
+		printf("TIME starting reconstruction... \n");
+		printf("TIME start_ms_process_parent_event : %d\n", start_ms_process_parent_event);
 		int end_time_process_parent_event = (int)clock_time();// Get the system time.
 		int difference_process_parent_event = end_time_process_parent_event - start_ms_process_parent_event;
 		printf("TIME elapsed time in ms difference_process_parent_event: %d\n", difference_process_parent_event);
@@ -1385,9 +1396,9 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		PRINTF("RPL: Moving in the instance from rank %hu to %hu\n",
 				DAG_RANK(old_rank, instance), DAG_RANK(instance->current_dag->rank, instance));
 		if(instance->current_dag->rank != INFINITE_RANK) {
-
 			start_ms_process_parent_event2 = (int)clock_time(); // Get the system time.
-			//printf("TIME start_ms_process_parent_event2 : %d\n", start_ms_process_parent_event2);
+			printf("TIME starting reconstruction... \n");
+			printf("TIME start_ms_process_parent_event2 : %d\n", start_ms_process_parent_event2);
 			int end_time_process_parent_event2 = (int)clock_time();// Get the system time.
 			int difference_process_parent_event2 = end_time_process_parent_event2 - start_ms_process_parent_event2;
 			printf("TIME elapsed time in ms difference_process_parent_event2: %d\n", difference_process_parent_event2);

@@ -47,7 +47,7 @@
 #include "net/rpl/rpl-mrhof.h"
 #include "net/neighbor-info.h"
 
-#define DEBUG DEBUG_NONE
+#define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
 #include <limits.h>
@@ -65,6 +65,7 @@ int transmission_error_ipv6_occured = 0;
 void
 rpl_purge_routes(void)
 {
+	PRINTF("jestem w rpl_purge_routes rpl.c  \n");
   uip_ds6_route_t *r;
   uip_ipaddr_t prefix;
   rpl_dag_t *dag;
@@ -162,11 +163,11 @@ rpl_add_route(rpl_dag_t *dag, uip_ipaddr_t *prefix, int prefix_len,
   rep->state.lifetime = RPL_LIFETIME(dag->instance, dag->instance->default_lifetime);
   rep->state.learned_from = RPL_ROUTE_FROM_INTERNAL;
 
-  /*PRINTF("RPL: Added a route to ");
+  PRINTF("RPL: Added a route to ");
   PRINT6ADDR(prefix);
   PRINTF("/%d via ", prefix_len);
   PRINT6ADDR(next_hop);
-  PRINTF("\n");*/
+  PRINTF("\n");
 
   return rep;
 }
@@ -189,12 +190,12 @@ rpl_link_neighbor_callback(const rimeaddr_t *addr, int status, int numtx)
       parent = rpl_find_parent_any_dag(instance, &ipaddr, int_pointer);
       if(parent != NULL) {
         /* Trigger DAG rank recalculation. */
-        //PRINTF("RPL: rpl_link_neighbor_callback triggering update\n");
+        PRINTF("RPL: rpl_link_neighbor_callback triggering update\n");
         parent->updated = 1;
         if(instance->of->neighbor_link_callback != NULL) {
           instance->of->neighbor_link_callback(parent, status, numtx, &transmission_error_occured);
-          PRINTF("RPL: rpl_link_neighbor_callback po wejsciu do ifa, "
-        		  "wartosc transmission_error_occured: %d \n", transmission_error_occured);
+          //PRINTF("RPL: rpl_link_neighbor_callback po wejsciu do ifa, "
+        	//	  "wartosc transmission_error_occured: %d \n", transmission_error_occured);
         }
       }
     }
@@ -229,7 +230,7 @@ void
 rpl_init(void)
 {
   uip_ipaddr_t rplmaddr;
-  //PRINTF("RPL started\n");
+  PRINTF("RPL started\n");
   default_instance = NULL;
 
   rpl_dag_init();
