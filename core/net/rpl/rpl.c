@@ -47,7 +47,7 @@
 #include "net/rpl/rpl-mrhof.h"
 #include "net/neighbor-info.h"
 
-#define DEBUG DEBUG_PRINT
+#define DEBUG DEBUG_NONE
 #include "net/uip-debug.h"
 
 #include <limits.h>
@@ -65,7 +65,7 @@ int transmission_error_ipv6_occured = 0;
 void
 rpl_purge_routes(void)
 {
-	PRINTF("jestem w rpl_purge_routes rpl.c  \n");
+	//PRINTF("jestem w rpl_purge_routes rpl.c  \n");
   uip_ds6_route_t *r;
   uip_ipaddr_t prefix;
   rpl_dag_t *dag;
@@ -214,7 +214,7 @@ rpl_ipv6_neighbor_callback(uip_ds6_nbr_t *nbr)
   PRINTF("\n");
   for(instance = &instance_table[0], end = instance + RPL_MAX_INSTANCES; instance < end; ++instance) {
     if(instance->used == 1 ) {
-    	//PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
+    	PRINTF("RPL: rpl_ipv6_neighbor_callback po ifie \n");
       p = rpl_find_parent_any_dag(instance, &nbr->ipaddr, &transmission_error_ipv6_occured);
       if(p != NULL) {
         p->rank = INFINITE_RANK;
