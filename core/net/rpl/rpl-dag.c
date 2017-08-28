@@ -242,43 +242,27 @@ rpl_dag_init(void)
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
-	//PRINTF("TEST: na poczatku rpl_set_another_preferred_parent \n");
-	// find the best parent from all parents
-	int limit = 10;
-	int it = 0;
 	rpl_parent_t *cursor = NULL;
 	rpl_parent_t *best = NULL;
-	cursor = list_head(all_parents);// head of the list of parents
-	//PRINTF("TEST: list_length(all_parents) %d \n", list_length(all_parents));
-	//PRINTF("TEST: rpl_set_another_preferred_parent, cursor->rank: %d \n",cursor->rank);
-	while(cursor != NULL && it<limit) {
-		it++;
-		//PRINTF("TEST: rpl_set_another_preferred_parent, petla \n");
+	cursor = list_head(all_parents);
+	while(cursor != NULL){
 		if(best == NULL) {
 			best = cursor;
-
-			//PRINTF("TEST: ustawiam best = cursor; \n");
 		}
 		else {
 			best = best_parent_of0(cursor, best);
-			//PRINTF("TEST: wywoluje best_parent_of0(cursor, best) \n");
-			//best = best_parent_mrhof(current, best);
 		}
 		cursor = list_item_next(cursor);
 	}
 	nbr_table_unlock(rpl_parents, dag->preferred_parent);
 	nbr_table_lock(rpl_parents, best);
 	dag->preferred_parent = best;
-	//PRINTF("TEST: setting another preferred parent, it: %d\n",it);
-	//PRINTF("TEST: setting another preferred parent, best->rank: %d\n",best->rank);
-
 	return best;
 }
 /*---------------------------------------------------------------------------*/
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 {
-	//PRINTF("RPL: rpl_set_preferred_parent \n");
 	if(dag != NULL && dag->preferred_parent != p) {
 		//PRINTF("RPL: rpl_set_preferred_parent ");
 		if(p != NULL) {
@@ -288,7 +272,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 		}
 		//PRINTF(" used to be ");
 		if(dag->preferred_parent != NULL) {
-			//PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent)); // tutaj: illegal read out of bounds
+			//PRINT6ADDR(rpl_get_parent_ipaddr(dag->preferred_parent));
 		} else {
 			//PRINTF("NULL");
 		}
@@ -302,20 +286,12 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 	}
 
 	if(transmission_error_occured == 1) {
-		//PRINTF("TEST: transmission_error_occured!! \n");
-		//TODO3
 		start_ms_set_preferred_parent = (int)clock_time(); // Get the system time.
 		printf("TIME starting reconstruction... \n");
-		//printf("TIME start_ms_set_preferred_parent : %d\n", start_ms_set_preferred_parent);
-
 		parent = rpl_set_another_preferred_parent(dag);
 		int end_time_set_preferred_parent = (int)clock_time();// Get the system time.
 		int difference_set_preferred_parent = end_time_set_preferred_parent - start_ms_set_preferred_parent;
-		//printf("TIME elapsed time in ms difference_set_preferred_parent: %d\n", difference_set_preferred_parent);
 		printf("Reconstruction ended \n");
-		/*if(parent == NULL){
-		 rpl_set_another_preferred_parent(dag);
-		 }*/
 	}
 }
 /*---------------------------------------------------------------------------*/
