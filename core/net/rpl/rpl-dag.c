@@ -239,6 +239,7 @@ rpl_dag_init(void)
 	list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
+
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
@@ -259,6 +260,7 @@ rpl_set_another_preferred_parent(rpl_dag_t *dag)
 	dag->preferred_parent = best;
 	return best;
 }
+
 /*---------------------------------------------------------------------------*/
 static void
 rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
@@ -889,6 +891,7 @@ rpl_select_dag(rpl_instance_t *instance, rpl_parent_t *p)
 	return best_dag;
 }
 /*---------------------------------------------------------------------------*/
+
 rpl_parent_t *
 rpl_select_parent(rpl_dag_t *dag)
 {
@@ -897,9 +900,7 @@ rpl_select_parent(rpl_dag_t *dag)
 	rimeaddr_t *current_parent_address;
 	p = nbr_table_head(rpl_parents);
 	while(p != NULL) {
-		//head_ = ll_append(head_,p);
 		list_add(all_parents, p);
-		//PRINTF("RPL: Adding a parent to a list of all parents: %d\n", p->rank);
 		if(p->rank == INFINITE_RANK) {
 			/* ignore this neighbor */
 		} else if(best == NULL) {
@@ -915,6 +916,7 @@ rpl_select_parent(rpl_dag_t *dag)
 	}
 	return best;
 }
+
 /*---------------------------------------------------------------------------*/
 void
 rpl_remove_parent(rpl_parent_t *parent)
@@ -1010,6 +1012,7 @@ rpl_get_instance(uint8_t instance_id)
 }
 
 /*---------------------------------------------------------------------------*/
+
 static rpl_parent_t *
 best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
 {
@@ -1017,19 +1020,12 @@ best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
 	rpl_rank_t r1, r2;
 	rpl_dag_t *dag;
 
-	/*PRINTF("RPL: Comparing parent ");
-	 PRINT6ADDR(rpl_get_parent_ipaddr(p1));
-	 PRINTF(" (confidence %d, rank %d) with parent ",
-	 p1->link_metric, p1->rank);
-	 PRINT6ADDR(rpl_get_parent_ipaddr(p2));
-	 PRINTF(" (confidence %d, rank %d)\n",
-	 p2->link_metric, p2->rank);*/
-
 	r1 = DAG_RANK(p1->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC +
 	p1->link_metric;
 	r2 = DAG_RANK(p2->rank, p1->dag->instance) * RPL_MIN_HOPRANKINC +
 	p2->link_metric;
-	// Compare two parents by looking both and their rank and at the ETX for that parent. We choose the parent that has the most favourable combination.
+	// Compare two parents by looking both and their rank and at the ETX for that parent.
+	// We choose the parent that has the most favourable combination.
 
 	dag = (rpl_dag_t *)p1->dag;// Both parents must be in the same DAG.
 	if(r1 < r2 + MIN_DIFFERENCE &&
@@ -1041,6 +1037,7 @@ best_parent_of0(rpl_parent_t *p1, rpl_parent_t *p2)
 		return p2;
 	}
 }
+
 /*---------------------------------------------------------------------------*/
 rpl_of_t *
 rpl_find_of(rpl_ocp_t ocp)
@@ -1287,6 +1284,7 @@ rpl_local_repair(rpl_instance_t *instance)
 	RPL_STAT(rpl_stats.local_repairs++);
 }
 /*---------------------------------------------------------------------------*/
+
 void
 rpl_recalculate_ranks(void)
 {
@@ -1305,35 +1303,20 @@ rpl_recalculate_ranks(void)
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				//PRINTF("RPL: A parent was dropped\n");
 				start_ms_recalculate_ranks = (int)clock_time(); // Get the system time.
-				//printf("TIME start_ms_recalculate_ranks : %d\n", start_ms_recalculate_ranks);
 				printf("TIME starting reconstruction... \n");
 				rpl_set_another_preferred_parent(p->dag);
 				int end_time_recalculate_ranks = (int)clock_time();// Get the system time.
 				int difference_recalculate_ranks = end_time_recalculate_ranks - start_ms_recalculate_ranks;
-				//printf("TIME elapsed time in ms difference_recalculate_ranks: %d\n", difference_recalculate_ranks);
-				printf("Reconstruction ended \n");
-			} else {
-				start_ms_recalculate_ranks2 = (int)clock_time(); // Get the system time.
-				//printf("TIME start_ms_recalculate_ranks2 : %d\n", start_ms_recalculate_ranks2);
-				printf("TIME starting reconstruction... \n");
-				int end_time_recalculate_ranks2 = (int)clock_time();// Get the system time.
-				int difference_recalculate_ranks2 = end_time_recalculate_ranks2 - start_ms_recalculate_ranks2;
-				//printf("TIME elapsed time in ms difference_recalculate_ranks2: %d\n", difference_recalculate_ranks2);
 				printf("Reconstruction ended \n");
 			}
-
-			/*else if(transmission_error_occured == 1){ //|| transmission_error_ipv6_occured == 1){
-			 PRINTF("RPL: Transmission error: transmission_error_occured: %d\n", transmission_error_occured);
-			 //PRINTF("RPL: Transmission error: transmission_error_ipv6_occured: %d\n", transmission_error_ipv6_occured);
-			 rpl_set_another_preferred_parent(p->dag);
-			 }*/
 		}
 		p = nbr_table_next(rpl_parents, p);
 	}
 }
+
 /*---------------------------------------------------------------------------*/
-int
-rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
+
+int rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 {
 	int return_value;
 
@@ -1350,10 +1333,8 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		//PRINTF("RPL: Unacceptable rank %u\n", (unsigned)p->rank);
 		start_ms_process_parent_event = (int)clock_time(); // Get the system time.
 		printf("TIME starting reconstruction... \n");
-		//printf("TIME start_ms_process_parent_event : %d\n", start_ms_process_parent_event);
 		int end_time_process_parent_event = (int)clock_time();// Get the system time.
 		int difference_process_parent_event = end_time_process_parent_event - start_ms_process_parent_event;
-		//printf("TIME elapsed time in ms difference_process_parent_event: %d\n", difference_process_parent_event);
 		printf("Reconstruction ended \n");
 
 		rpl_nullify_parent(p);
@@ -1378,10 +1359,8 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		if(instance->current_dag->rank != INFINITE_RANK) {
 			start_ms_process_parent_event2 = (int)clock_time(); // Get the system time.
 			printf("TIME starting reconstruction... \n");
-			//printf("TIME start_ms_process_parent_event2 : %d\n", start_ms_process_parent_event2);
 			int end_time_process_parent_event2 = (int)clock_time();// Get the system time.
 			int difference_process_parent_event2 = end_time_process_parent_event2 - start_ms_process_parent_event2;
-			//printf("TIME elapsed time in ms difference_process_parent_event2: %d\n", difference_process_parent_event2);
 			printf("Reconstruction ended \n");
 
 			/*PRINTF("RPL: The preferred parent is ");
@@ -1389,13 +1368,13 @@ rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 			PRINTF(" (rank %u)\n",
 					(unsigned)DAG_RANK(instance->current_dag->preferred_parent->rank, instance));*/
 		} else {
-			PRINTF("RPL: We don't have any parent");
+			//PRINTF("RPL: We don't have any parent");
 		}
 	}
 #endif /* DEBUG */
-
 	return return_value;
 }
+
 /*---------------------------------------------------------------------------*/
 void
 rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
