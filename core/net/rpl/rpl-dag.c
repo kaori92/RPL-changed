@@ -289,11 +289,13 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 
 	if(transmission_error_occured == 1) {
 		start_ms_set_preferred_parent = (int)clock_time(); // Get the system time.
-		printf("TIME starting reconstruction... \n");
+		//printf("TIME starting reconstruction... \n");
 		parent = rpl_set_another_preferred_parent(dag);
 		int end_time_set_preferred_parent = (int)clock_time();// Get the system time.
 		int difference_set_preferred_parent = end_time_set_preferred_parent - start_ms_set_preferred_parent;
+		printf("rpl set preferred parent \n");
 		printf("Reconstruction ended \n");
+		transmission_error_occured = 0;
 	}
 }
 /*---------------------------------------------------------------------------*/
@@ -1307,6 +1309,7 @@ rpl_recalculate_ranks(void)
 				rpl_set_another_preferred_parent(p->dag);
 				int end_time_recalculate_ranks = (int)clock_time();// Get the system time.
 				int difference_recalculate_ranks = end_time_recalculate_ranks - start_ms_recalculate_ranks;
+				printf("recalculate ranks \n");
 				printf("Reconstruction ended \n");
 			}
 		}
@@ -1335,6 +1338,7 @@ int rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		printf("TIME starting reconstruction... \n");
 		int end_time_process_parent_event = (int)clock_time();// Get the system time.
 		int difference_process_parent_event = end_time_process_parent_event - start_ms_process_parent_event;
+		printf("rpl process parent event1 \n");
 		printf("Reconstruction ended \n");
 
 		rpl_nullify_parent(p);
@@ -1357,11 +1361,12 @@ int rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		//PRINTF("RPL: Moving in the instance from rank %hu to %hu\n",
 		//		DAG_RANK(old_rank, instance), DAG_RANK(instance->current_dag->rank, instance));
 		if(instance->current_dag->rank != INFINITE_RANK) {
-			start_ms_process_parent_event2 = (int)clock_time(); // Get the system time.
+			/*start_ms_process_parent_event2 = (int)clock_time(); // Get the system time.
 			printf("TIME starting reconstruction... \n");
 			int end_time_process_parent_event2 = (int)clock_time();// Get the system time.
 			int difference_process_parent_event2 = end_time_process_parent_event2 - start_ms_process_parent_event2;
-			printf("Reconstruction ended \n");
+			printf("rpl process parent event2 \n");
+			printf("Reconstruction ended \n");*/
 
 			/*PRINTF("RPL: The preferred parent is ");
 			PRINT6ADDR(rpl_get_parent_ipaddr(instance->current_dag->preferred_parent));
