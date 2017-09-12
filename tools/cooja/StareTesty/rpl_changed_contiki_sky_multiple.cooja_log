@@ -1,0 +1,36 @@
+[19:38:30 - main] [GUI.java:1325] [INFO] - > Starting Cooja
+[19:38:30 - main] [GUI.java:2846] [INFO] - External tools default settings: /external_tools_linux.config
+[19:38:30 - main] [GUI.java:2876] [INFO] - External tools user settings: /home/user/.cooja.user.properties
+[19:38:31 - main] [Simulation.java:423] [INFO] - Simulation random seed: 6174712393273056128
+[19:38:31 - main] [CompileContiki.java:140] [INFO] - > make udp-server.sky TARGET=sky 
+[19:38:31 - main] [SkyMoteType.java:171] [FATAL] - >> 
+[19:38:31 - main] [SkyMoteType.java:171] [FATAL] - >> > make udp-server.sky TARGET=sky 
+[19:38:31 - main] [SkyMoteType.java:174] [FATAL] - Compilation error: Compilation error: Cannot run program "make" (in directory "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/tools/cooja/Testy/RPL-changed/RPL-changed/examples/ipv6/rpl-udp"): error=2, No such file or directory
+[19:38:31 - main] [GUI.java:1347] [FATAL] - Exception when loading simulation: 
+se.sics.cooja.GUI$SimulationCreationException: Mote type creation error: Mote type creation failed: Compilation error: Cannot run program "make" (in directory "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/tools/cooja/Testy/RPL-changed/RPL-changed/examples/ipv6/rpl-udp"): error=2, No such file or directory
+	at se.sics.cooja.GUI.loadSimulationConfig(GUI.java:3440)
+	at se.sics.cooja.GUI.loadSimulationConfig(GUI.java:3352)
+	at se.sics.cooja.GUI.quickStartSimulationConfig(GUI.java:1340)
+	at se.sics.cooja.GUI.main(GUI.java:3229)
+Caused by: se.sics.cooja.MoteType$MoteTypeCreationException: Mote type creation failed: Compilation error: Cannot run program "make" (in directory "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/tools/cooja/Testy/RPL-changed/RPL-changed/examples/ipv6/rpl-udp"): error=2, No such file or directory
+	at se.sics.cooja.mspmote.SkyMoteType.configureAndInit(SkyMoteType.java:160)
+	at se.sics.cooja.mspmote.MspMoteType.setConfigXML(MspMoteType.java:319)
+	at se.sics.cooja.Simulation.setConfigXML(Simulation.java:681)
+	at se.sics.cooja.GUI.loadSimulationConfig(GUI.java:3422)
+	... 3 more
+Caused by: se.sics.cooja.MoteType$MoteTypeCreationException: Compilation error: Cannot run program "make" (in directory "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/tools/cooja/Testy/RPL-changed/RPL-changed/examples/ipv6/rpl-udp"): error=2, No such file or directory
+	at se.sics.cooja.dialogs.CompileContiki.compile(CompileContiki.java:277)
+	at se.sics.cooja.dialogs.CompileContiki.compile(CompileContiki.java:100)
+	at se.sics.cooja.mspmote.SkyMoteType.configureAndInit(SkyMoteType.java:149)
+	... 6 more
+Caused by: java.io.IOException: Cannot run program "make" (in directory "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/tools/cooja/Testy/RPL-changed/RPL-changed/examples/ipv6/rpl-udp"): error=2, No such file or directory
+	at java.lang.ProcessBuilder.start(ProcessBuilder.java:1048)
+	at java.lang.Runtime.exec(Runtime.java:620)
+	at se.sics.cooja.dialogs.CompileContiki.compile(CompileContiki.java:147)
+	... 8 more
+Caused by: java.io.IOException: error=2, No such file or directory
+	at java.lang.UNIXProcess.forkAndExec(Native Method)
+	at java.lang.UNIXProcess.<init>(UNIXProcess.java:247)
+	at java.lang.ProcessImpl.start(ProcessImpl.java:134)
+	at java.lang.ProcessBuilder.start(ProcessBuilder.java:1029)
+	... 10 more

@@ -64,8 +64,9 @@
 #define CLIF
 
 #define HAVE_STDINT_H
-#include "msp430def.h"
 
+//#include "msp430def.h"
+#include "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/cpu/msp430/msp430def.h"
 
 /* Types for clocks and uip_stats */
 typedef unsigned short uip_stats_t;

@@ -101,8 +101,11 @@ public class PowerTracker extends VisPlugin {
       }
       public void moteWasRemoved(Mote mote) {
         removeMote(mote);
-        table.invalidate();
-        table.repaint();
+	if(table != null){
+		table.invalidate();
+        	table.repaint();
+	}
+        
       }
     });
     for (Mote m: simulation.getMotes()) {

@@ -71,7 +71,8 @@
 #define UIP_BIG_ENDIAN     1234
 #endif /* UIP_BIG_ENDIAN */
 
-#include "contiki-conf.h"
+#include "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/platform/sky/contiki-conf.h"
+//#include "contiki-conf.h"
 
 /*------------------------------------------------------------------------------*/
 

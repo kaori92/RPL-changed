@@ -53,7 +53,8 @@
 #ifndef __UIP_H__
 #define __UIP_H__
 
-#include "net/uipopt.h"
+#include "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/core/net/uipopt.h"
+//#include "net/uipopt.h"
 
 /**
  * Representation of an IP address.
@@ -116,8 +117,8 @@ typedef uip_eth_addr uip_lladdr_t;
 #endif /*UIP_CONF_LL_80211*/
 #endif /*UIP_CONF_LL_802154*/
 
-#include "net/tcpip.h"
-
+//#include "net/tcpip.h"
+#include "/media/2061dcfd-f7b9-428a-8bfb-14d97e599d64/RPL-changed/RPL-changed/core/net/tcpip.h"
 /*---------------------------------------------------------------------------*/
 /* First, the functions that should be called from the
  * system. Initialization, the periodic timer, and incoming packets are
