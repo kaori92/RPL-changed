@@ -1,0 +1,14 @@
+[10:00:37 - main] [GUI.java:1325] [INFO] - > Starting Cooja
+[10:00:38 - main] [GUI.java:2846] [INFO] - External tools default settings: /external_tools_linux.config
+[10:00:38 - main] [GUI.java:2876] [INFO] - External tools user settings: /home/user/.cooja.user.properties
+[10:00:39 - main] [GUI.java:1347] [FATAL] - Exception when loading simulation: 
+se.sics.cooja.GUI$SimulationCreationException: Load simulation error
+	at se.sics.cooja.GUI.loadSimulationConfig(GUI.java:3356)
+	at se.sics.cooja.GUI.quickStartSimulationConfig(GUI.java:1340)
+	at se.sics.cooja.GUI.main(GUI.java:3229)
+Caused by: java.io.FileNotFoundException: rpl_changed_contiki_sky_multiple.csc.csc (No such file or directory)
+	at java.io.FileInputStream.open0(Native Method)
+	at java.io.FileInputStream.open(FileInputStream.java:195)
+	at java.io.FileInputStream.<init>(FileInputStream.java:138)
+	at se.sics.cooja.GUI.loadSimulationConfig(GUI.java:3344)
+	... 2 more
