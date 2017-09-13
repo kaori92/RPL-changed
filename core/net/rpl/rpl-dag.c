@@ -293,7 +293,7 @@ rpl_set_preferred_parent(rpl_dag_t *dag, rpl_parent_t *p)
 		parent = rpl_set_another_preferred_parent(dag);
 		int end_time_set_preferred_parent = (int)clock_time();// Get the system time.
 		int difference_set_preferred_parent = end_time_set_preferred_parent - start_ms_set_preferred_parent;
-		printf("rpl set preferred parent \n");
+		//printf("rpl set preferred parent \n");
 		printf("Reconstruction ended \n");
 		transmission_error_occured = 0;
 	}
@@ -1305,11 +1305,11 @@ rpl_recalculate_ranks(void)
 			if(!rpl_process_parent_event(p->dag->instance, p)) {
 				//PRINTF("RPL: A parent was dropped\n");
 				start_ms_recalculate_ranks = (int)clock_time(); // Get the system time.
-				printf("TIME starting reconstruction... \n");
+				//printf("TIME starting reconstruction... \n");
 				rpl_set_another_preferred_parent(p->dag);
 				int end_time_recalculate_ranks = (int)clock_time();// Get the system time.
 				int difference_recalculate_ranks = end_time_recalculate_ranks - start_ms_recalculate_ranks;
-				printf("recalculate ranks \n");
+				//printf("recalculate ranks \n");
 				printf("Reconstruction ended \n");
 			}
 		}
@@ -1335,10 +1335,10 @@ int rpl_process_parent_event(rpl_instance_t *instance, rpl_parent_t *p)
 		 from the choice of it as a parent would be too high. */
 		//PRINTF("RPL: Unacceptable rank %u\n", (unsigned)p->rank);
 		start_ms_process_parent_event = (int)clock_time(); // Get the system time.
-		printf("TIME starting reconstruction... \n");
+		//printf("TIME starting reconstruction... \n");
 		int end_time_process_parent_event = (int)clock_time();// Get the system time.
 		int difference_process_parent_event = end_time_process_parent_event - start_ms_process_parent_event;
-		printf("rpl process parent event1 \n");
+		//printf("rpl process parent event1 \n");
 		printf("Reconstruction ended \n");
 
 		rpl_nullify_parent(p);
@@ -1407,7 +1407,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 				//PRINTF("RPL: Global Repair\n");
 				if(dio->prefix_info.length != 0) {
 					if(dio->prefix_info.flags & UIP_ND6_RA_FLAG_AUTONOMOUS) {
-						PRINTF("RPL : Prefix announced in DIO\n");
+						//PRINTF("RPL : Prefix announced in DIO\n");
 						rpl_set_prefix(dag, &dio->prefix_info.prefix, dio->prefix_info.length);
 					}
 				}
@@ -1453,7 +1453,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 	/* Prefix Information Option treated to add new prefix */
 	if(dio->prefix_info.length != 0) {
 		if(dio->prefix_info.flags & UIP_ND6_RA_FLAG_AUTONOMOUS) {
-			PRINTF("RPL : Prefix announced in DIO\n");
+			//PRINTF("RPL : Prefix announced in DIO\n");
 			rpl_set_prefix(dag, &dio->prefix_info.prefix, dio->prefix_info.length);
 		}
 	}
