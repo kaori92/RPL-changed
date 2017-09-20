@@ -204,6 +204,12 @@ int start_ms_process_parent_event2 = 0;
 int start_ms_recalculate_ranks2 = 0;
 int start_ms_set_preferred_parent = 0;
 
+static struct etimer et;
+	static unsigned long rx_start_time, lpm_start_time, cpu_start_time,
+			tx_start_time = 0;
+	static unsigned long rx_new_time, lpm_new_time, cpu_new_time, tx_new_time =
+			0;
+
 typedef int bool;
 #define true 1
 #define false 0
@@ -239,7 +245,43 @@ rpl_dag_init(void)
 	list_init(all_parents);
 }
 /*---------------------------------------------------------------------------*/
+void
+compute_power(void)
+{
+	//printf("Jestem w compute_power\n");
+	energest_flush();
+	//packetbuf_copyfrom("Hello", 6);
+	//broadcast_send(&broadcast);
+	//printf("broadcast message sent\n");
 
+	rx_new_time = energest_type_time(ENERGEST_TYPE_LISTEN);
+	lpm_new_time = energest_type_time(ENERGEST_TYPE_LPM);
+	cpu_new_time = energest_type_time(ENERGEST_TYPE_CPU);
+	tx_new_time = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+	printf("Time spent (micro sec) rx: %lu tx: %lu cpu: %lu lpm: %lu ",
+			(unsigned long) (1e6 * (rx_new_time - rx_start_time) / RTIMER_SECOND),
+			(unsigned long) (1e6 * (tx_new_time - tx_start_time) / RTIMER_SECOND),
+			(unsigned long) (1e6 * (cpu_new_time - cpu_start_time)
+					/ RTIMER_SECOND),
+			(unsigned long) (1e6 * (lpm_new_time - lpm_start_time)
+					/ RTIMER_SECOND));
+
+	printf("Total Energy: %lu uJ\n",
+			(unsigned long) ((21800 * 3 * (rx_new_time - rx_start_time)
+							/ RTIMER_SECOND)
+					+ (19500 * 3 * (tx_new_time - tx_start_time) / RTIMER_SECOND)
+					+ (1800 * 3 * (cpu_new_time - cpu_start_time)
+							/ RTIMER_SECOND)
+					+ (2.6 * 3 * (lpm_new_time - lpm_start_time) / RTIMER_SECOND)));
+
+	rx_start_time = energest_type_time(ENERGEST_TYPE_LISTEN);
+	lpm_start_time = energest_type_time(ENERGEST_TYPE_LPM);
+	cpu_start_time = energest_type_time(ENERGEST_TYPE_CPU);
+	tx_start_time = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+
+	etimer_reset(&et);
+}
+/*---------------------------------------------------------------------------*/
 static rpl_parent_t *
 rpl_set_another_preferred_parent(rpl_dag_t *dag)
 {
@@ -1495,7 +1537,8 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
 		}
 	} else {
 		if(p->rank == dio->rank) {
-			//PRINTF("RPL: Received consistent DIO\n");
+			PRINTF("RPL: Received consistent DIO\n");
+			compute_power();
 			if(dag->joined) {
 				instance->dio_counter++;
 			}

@@ -41,6 +41,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "net/rime.h"
+#include "random.h"
+#include "sys/energest.h"
+#include "dev/button-sensor.h"
+#include "dev/leds.h"
+
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
@@ -73,7 +79,7 @@ tcpip_handler(void)
   if(uip_newdata()) {
     str = uip_appdata;
     str[uip_datalen()] = '\0';
-    printf("DATA recv '%s'\n", str);
+    //printf("DATA recv '%s'\n", str);
     //packets_received++;
   }
 }
@@ -85,9 +91,9 @@ send_packet(void *ptr)
   char buf[MAX_PAYLOAD_LEN];
 
   seq_id++;
-  PRINTF("DATA send to %d 'Hello %d'\n",
-         server_ipaddr.u8[sizeof(server_ipaddr.u8) - 1], seq_id);
-  sprintf(buf, "Hello %d from the client", seq_id);
+  //PRINTF("DATA send to %d 'Hello %d'\n",
+  //       server_ipaddr.u8[sizeof(server_ipaddr.u8) - 1], seq_id);
+  //sprintf(buf, "Hello %d from the client", seq_id);
   uip_udp_packet_sendto(client_conn, buf, strlen(buf),
                         &server_ipaddr, UIP_HTONS(UDP_SERVER_PORT));
 }
@@ -98,13 +104,13 @@ print_local_addresses(void)
   int i;
   uint8_t state;
 
-  PRINTF("Client IPv6 addresses: ");
+  //PRINTF("Client IPv6 addresses: ");
   for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
     state = uip_ds6_if.addr_list[i].state;
     if(uip_ds6_if.addr_list[i].isused &&
        (state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
-      PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
-      PRINTF("\n");
+      //PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
+      //PRINTF("\n");
       /* hack to make address "final" */
       if (state == ADDR_TENTATIVE) {
 	uip_ds6_if.addr_list[i].state = ADDR_PREFERRED;
@@ -147,6 +153,11 @@ set_global_address(void)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data)
 {
+	static struct etimer et;
+	static unsigned long rx_start_time, lpm_start_time, cpu_start_time,
+				tx_start_time = 0;
+		static unsigned long rx_new_time, lpm_new_time, cpu_new_time, tx_new_time =
+				0;
   static struct etimer periodic;
   static struct ctimer backoff_timer;
 #if WITH_COMPOWER
@@ -154,28 +165,62 @@ PROCESS_THREAD(udp_client_process, ev, data)
 #endif
 
   PROCESS_BEGIN();
-
+  etimer_set(&et, 3 * CLOCK_SECOND);
   //powertrace_start(CLOCK_SECOND * 2);
   PROCESS_PAUSE();
   //powertrace_print("POWERTRACE: ");
   set_global_address();
   
-  PRINTF("UDP client process started\n");
+  //PRINTF("UDP client process started\n");
 
   print_local_addresses();
 
   /* new connection with remote host */
   client_conn = udp_new(NULL, UIP_HTONS(UDP_SERVER_PORT), NULL); 
   if(client_conn == NULL) {
-    PRINTF("No UDP connection available, exiting the process!\n");
+    //PRINTF("No UDP connection available, exiting the process!\n");
     PROCESS_EXIT();
   }
   udp_bind(client_conn, UIP_HTONS(UDP_CLIENT_PORT)); 
 
-  PRINTF("Created a connection with the server ");
+  /*PRINTF("Created a connection with the server ");
   PRINT6ADDR(&client_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n",
-	UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));
+	UIP_HTONS(client_conn->lport), UIP_HTONS(client_conn->rport));*/
+
+  energest_flush();
+  	//packetbuf_copyfrom("Hello", 6);
+  	//broadcast_send(&broadcast);
+  	//printf("broadcast message sent\n");
+
+  	rx_new_time = energest_type_time(ENERGEST_TYPE_LISTEN);
+  	lpm_new_time = energest_type_time(ENERGEST_TYPE_LPM);
+  	cpu_new_time = energest_type_time(ENERGEST_TYPE_CPU);
+  	tx_new_time = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+
+  	printf("Time spent (micro sec) rx: %lu tx: %lu cpu: %lu lpm: %lu ",
+  			(unsigned long) (1e6 * (rx_new_time - rx_start_time) / RTIMER_SECOND),
+  			(unsigned long) (1e6 * (tx_new_time - tx_start_time) / RTIMER_SECOND),
+  			(unsigned long) (1e6 * (cpu_new_time - cpu_start_time)
+  					/ RTIMER_SECOND),
+  			(unsigned long) (1e6 * (lpm_new_time - lpm_start_time)
+  					/ RTIMER_SECOND));
+
+  	printf("Total Energy: %lu uJ\n",
+  			(unsigned long) ((21800 * 3 * (rx_new_time - rx_start_time)
+  					/ RTIMER_SECOND)
+  					+ (19500 * 3 * (tx_new_time - tx_start_time) / RTIMER_SECOND)
+  					+ (1800 * 3 * (cpu_new_time - cpu_start_time)
+  							/ RTIMER_SECOND)
+  					+ (2.6 * 3 * (lpm_new_time - lpm_start_time) / RTIMER_SECOND)));
+
+  	rx_start_time = energest_type_time(ENERGEST_TYPE_LISTEN);
+  	lpm_start_time = energest_type_time(ENERGEST_TYPE_LPM);
+  	cpu_start_time = energest_type_time(ENERGEST_TYPE_CPU);
+  	tx_start_time = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+
+  	etimer_reset(&et);
+
 
 #if WITH_COMPOWER
   powertrace_sniff(POWERTRACE_ON);
